@@ -42,7 +42,7 @@ load_config() {
 
   phoenix_dir=$build_dir/$phoenix_relative_path
 
-  if [ -e $build_dir/phoenix/mix.exs ]; then
+  if [ -e $build_dir/deps/phoenix/mix.exs ]; then
     info "Detecting Phoenix version"
     local lcl_phx_ver=$(grep -P "^\s+@version \"\d+\.\d+\.\d+\"" $build_dir/deps/phoenix/mix.exs | sed -e 's%.*"\(.*\)".*%\1%')
     if [ -z "$lcl_phx_ver" ]; then
