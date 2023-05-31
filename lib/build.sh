@@ -43,6 +43,7 @@ resolve_node() {
     number=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
     url="${base_url}/v${number}/${node_file//\"/}"
     node_version=$number
+    cached_node=$cache_dir/node-v$node_version-linux-x64.tar.gz
   else
     fail_bin_install node $node_version;
   fi
