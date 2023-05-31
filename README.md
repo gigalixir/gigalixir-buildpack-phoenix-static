@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This buildpack is meant to be used with the [Heroku Buildpack for Elixir](https://github.com/HashNuke/heroku-buildpack-elixir). When deploying Phoenix apps to Heroku, static assets will need to be compiled. This buildpack sees to it that static assets are compiled and that a corresponding asset manifest is generated.
+This buildpack is meant to be used with the [Heroku Buildpack for Elixir](https://github.com/HashNuke/heroku-buildpack-elixir). When deploying Phoenix apps to Gigalixir, static assets will need to be compiled. This buildpack sees to it that static assets are compiled and that a corresponding asset manifest is generated.
 
 ## Features
 * Easily customizable to your build needs with its `compile` hook!
@@ -17,15 +17,15 @@ This buildpack is meant to be used with the [Heroku Buildpack for Elixir](https:
 ## Usage
 
 ```bash
-# Create a Heroku instance for your project
-heroku apps:create my_heroku_app
+# Create a Gigalixir instance for your project
+gigalixir create my-gigalixir-app
 
 # Set and add the buildpacks for your Heroku app
-heroku buildpacks:set https://github.com/HashNuke/heroku-buildpack-elixir
-heroku buildpacks:add https://github.com/gjaldon/heroku-buildpack-phoenix-static
+echo "https://github.com/HashNuke/heroku-buildpack-elixir" >> .buildpacks
+echo "https://github.com/gigalixir/gigalixir-buildpack-phoenix-static" >> .buildpacks
 
 # Deploy
-git push heroku master
+git push gigalixir main
 ```
 
 ### Serve with Sass assets
@@ -47,14 +47,14 @@ bundle install
 Finally, add the ruby buildpack.
 ```bash
 # Add the ruby buildpack to your Heroku app
-heroku buildpacks:add https://github.com/heroku/heroku-buildpack-ruby
+echo "https://github.com/heroku/heroku-buildpack-ruby" >> .buildpacks
 ```
 
 ## Configuration
 
 Create a `phoenix_static_buildpack.config` file in your app's root dir if you want to override the defaults. The file's syntax is bash.
 
-If you don't specify a config option, then the default option from the buildpack's [`phoenix_static_buildpack.config`](https://github.com/gjaldon/heroku-buildpack-phoenix-static/blob/master/phoenix_static_buildpack.config) file will be used.
+If you don't specify a config option, then the default option from the buildpack's [`phoenix_static_buildpack.config`](https://github.com/gigalixir/gigalixir-buildpack-phoenix-static/blob/master/phoenix_static_buildpack.config) file will be used.
 
 
 __Here's a full config file with all available options:__
@@ -91,7 +91,7 @@ phoenix_ex=phx
 ## Compile
 
 By default, Phoenix uses `brunch` and recommends you to use `mix phx.digest` in production. For that, we have a default `compile` shell script which gets run after building dependencies and
-just before finalizing the build. The `compile` file [looks like this](https://github.com/gjaldon/heroku-buildpack-phoenix-static/blob/master/compile).
+just before finalizing the build. The `compile` file [looks like this](https://github.com/gigalixir/gigalixir-buildpack-phoenix-static/blob/master/compile).
 
 To customize your app's compile hook, just add a `compile` file to your app's root directory.
 `compile` is just a shell script, so you can use any valid `bash` code. Keep in mind you'll have
