@@ -42,21 +42,18 @@ load_config() {
 
   phoenix_dir=$build_dir/$phoenix_relative_path
 
-  info "Detecting Phoenix version"
-  pushd . > /dev/null
-  cd $build_dir
-  DATABASE_URL=ecto://u:p@h/d mix phx
-  DATABASE_URL=ecto://u:p@h/d mix deps tree
-  local lcl_phx_ver=$(mix phx 2> /dev/null | grep -P "^Phoenix v\d+\.\d+\.\d+$")
-  if [ -z "$lcl_phx_ver" ]; then
-    info "WARNING: unable to detect phoenix version"
-  else
-    info "* $lcl_phx_ver"
-    read -r phx_major phx_minor <<< $(echo $lcl_phx_ver | sed -e 's%^Phoenix v\([0-9]\+\)\.\([0-9]\+\)\..*%\1 \2%')
-    info "* Major: $phx_major"
-    info "* Minor: $phx_minor"
+  if [ -e $build_dir/phoenix/mix.exs ]; then
+    info "Detecting Phoenix version"
+    local lcl_phx_ver=$(grep -P "^\s+@version \"\d+\.\d+\.\d+\"" $build_dir/deps/phoenix/mix.exs | sed -e 's%.*"\(.*\)".*%\1%')
+    if [ -z "$lcl_phx_ver" ]; then
+      info "WARNING: unable to detect phoenix version"
+    else
+      info "* $lcl_phx_ver"
+      read -r phx_major phx_minor <<< $(echo $lcl_phx_ver | sed -e 's%\([0-9]\+\)\.\([0-9]\+\)\..*%\1 \2%')
+      info "* Major: $phx_major"
+      info "* Minor: $phx_minor"
+    fi
   fi
-  popd > /dev/null
 
   info "Detecting assets directory"
   if [ -f "$phoenix_dir/$assets_path/package.json" ]; then
