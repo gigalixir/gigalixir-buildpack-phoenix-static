@@ -22,6 +22,32 @@ file_contents() {
   fi
 }
 
+detect_phoenix() {
+  if [ -e $build_dir/deps/phoenix/mix.exs ]; then
+    info "Detecting Phoenix version"
+    local lcl_phx_ver=$(grep -P "^\s+@version \"\d+\.\d+\.\d+\"" $build_dir/deps/phoenix/mix.exs | sed -e 's%.*"\(.*\)".*%\1%')
+    if [ -z "$lcl_phx_ver" ]; then
+      info "WARNING: unable to detect phoenix version"
+    else
+      info "* $lcl_phx_ver"
+      read -r phx_major phx_minor <<< $(echo $lcl_phx_ver | sed -e 's%\([0-9]\+\)\.\([0-9]\+\)\..*%\1 \2%')
+      info "* Major: $phx_major"
+      info "* Minor: $phx_minor"
+
+      # detect mix command
+      if [ -z "$phoenix_ex" ]; then
+        if [[ $phx_major -lt 1 ]] || [[ $phx_major -lt 2 && $phx_minor -lt 3 ]]; then
+          phoenix_ex=${phoenix_ex:-phoenix}
+          info "* Phoenix 1.2.x or prior detected, using phoenix_ex=${phoenix_ex}"
+        else
+          phoenix_ex=${phoenix_ex:-phx}
+          info "* Phoenix 1.3.x or later detected, using phoenix_ex=${phoenix_ex}"
+        fi
+      fi
+    fi
+  fi
+}
+
 load_config() {
   info "Loading config..."
 
@@ -42,18 +68,7 @@ load_config() {
 
   phoenix_dir=$build_dir/$phoenix_relative_path
 
-  if [ -e $build_dir/deps/phoenix/mix.exs ]; then
-    info "Detecting Phoenix version"
-    local lcl_phx_ver=$(grep -P "^\s+@version \"\d+\.\d+\.\d+\"" $build_dir/deps/phoenix/mix.exs | sed -e 's%.*"\(.*\)".*%\1%')
-    if [ -z "$lcl_phx_ver" ]; then
-      info "WARNING: unable to detect phoenix version"
-    else
-      info "* $lcl_phx_ver"
-      read -r phx_major phx_minor <<< $(echo $lcl_phx_ver | sed -e 's%\([0-9]\+\)\.\([0-9]\+\)\..*%\1 \2%')
-      info "* Major: $phx_major"
-      info "* Minor: $phx_minor"
-    fi
-  fi
+  detect_phoenix
 
   info "Detecting assets directory"
   if [ -f "$phoenix_dir/$assets_path/package.json" ]; then
@@ -61,18 +76,12 @@ load_config() {
     info "* package.json found in custom directory"
   elif [ -f "$phoenix_dir/package.json" ]; then
     # Check phoenix root directory for package.json, phoenix 1.2.x and prior
-    info "WARNING: package.json detected in root "
-    info "* assuming phoenix 1.2.x or prior, please check config file"
-
+    info "* package.json found in root directory"
     assets_path=.
-    phoenix_ex=${phoenix_ex:-phoenix}
   else
     # Check phoenix custom sub-directory for package.json, phoenix 1.3.x and later
-    info "WARNING: no package.json detected in root nor custom directory"
-    info "* assuming phoenix 1.3.x and later, please check config file"
-
+    info "WARNING: no package.json detected in root nor custom directory, assuming './assets/'"
     assets_path=assets
-    phoenix_ex=${phoenix_ex:-phx}
   fi
 
   assets_dir=$phoenix_dir/$assets_path
