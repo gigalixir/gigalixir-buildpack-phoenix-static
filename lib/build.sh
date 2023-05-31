@@ -20,18 +20,13 @@ load_previous_npm_node_versions() {
   fi
 }
 
-resolve_node() {
-  echo "Resolving node version $node_version..."
-  
+resolve_node_download() {
   local base_url="https://nodejs.org/dist"
   local lookup_url=""
 
   case $node_version in
     ""|latest)
       lookup_url="${base_url}/latest/"
-      ;;
-    v*)
-      lookup_url="${base_url}/${node_version}/"
       ;;
     *)
       lookup_url="${base_url}/v${node_version}/"
@@ -40,23 +35,40 @@ resolve_node() {
 
   local node_file=$(curl --silent --get --retry 5 --retry-max-time 15 $lookup_url -f | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
   if [ "$?" -eq "0" ]; then
-    number=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-    url="${base_url}/v${number}/${node_file//\"/}"
-    node_version=$number
-    cached_node=$cache_dir/node-v$node_version-linux-x64.tar.gz
+    node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+    node_url="${base_url}/v${node_version}/${node_file//\"/}"
   else
     fail_bin_install node $node_version;
   fi
 }
 
+resolve_node_version() {
+  # latest -> A.B.C
+  # vA.B.C -> A.B.C
+  case $node_version in
+    latest)
+      echo "Resolving latest node version..."
+      ;;
+    v*)
+      node_version="${node_version#*v}"
+      ;;
+    *)
+      ;;
+  esac
+
+  cached_node=$cache_dir/node-v$node_version-linux-x64.tar.gz
+}
+
 download_node() {
   local platform=linux-x64
 
-  if [ ! -f ${cached_node} ]; then
-    resolve_node
+  resolve_node_version
 
-    echo "Downloading and installing node $number..."
-    local code=$(curl "$url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}")
+  if [ ! -f ${cached_node} ]; then
+    resolve_node_download
+
+    echo "Downloading and installing node $node_version..."
+    local code=$(curl "$node_url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}")
     if [ "$code" != "200" ]; then
       echo "Unable to download node: $code" && false
     fi
