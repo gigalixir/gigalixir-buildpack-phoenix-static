@@ -43,7 +43,7 @@ load_config() {
   phoenix_dir=$build_dir/$phoenix_relative_path
 
   info "Detecting Phoenix version"
-  mix phx
+  mix deps tree
   local lcl_phx_ver=$(mix phx 2> /dev/null | grep -P "^Phoenix v\d+\.\d+\.\d+$")
   if [ -z "$lcl_phx_ver" ]; then
     info "WARNING: unable to detect phoenix version"
