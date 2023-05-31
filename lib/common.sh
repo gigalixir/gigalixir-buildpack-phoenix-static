@@ -131,7 +131,9 @@ export_mix_env() {
 }
 
 fix_node_version() {
-  node_version=$(echo "${node_version}" | sed 's/[^0-9.]*//g')
+  if [ "$node_version" != "latest" ]; then
+    node_version=$(echo "${node_version}" | sed 's/[^0-9.]*//g')
+  fi
 }
 
 fix_npm_version() {

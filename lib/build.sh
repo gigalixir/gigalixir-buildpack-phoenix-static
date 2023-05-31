@@ -46,11 +46,8 @@ resolve_node_version() {
   # latest -> A.B.C
   # vA.B.C -> A.B.C
   case $node_version in
-    latest)
+    ""|latest)
       echo "Resolving latest node version..."
-      ;;
-    v*)
-      node_version="${node_version#*v}"
       ;;
     *)
       ;;
