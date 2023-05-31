@@ -42,17 +42,15 @@ load_config() {
 
   phoenix_dir=$build_dir/$phoenix_relative_path
 
-  if [ -z "${phoenix_ex}" ]; then
-    info "Detecting Phoenix version"
-    local lcl_phx_ver=$(mix phx 2> /dev/null | grep -P "^Phoenix v\d+\.\d+\.\d+$")
-    if [ -z "$lcl_phx_ver" ]; then
-      info "WARNING: unable to detect phoenix version"
-    else
-      info "* $lcl_phx_ver"
-      read -r phx_major phx_minor <<< $(echo $lcl_phx_ver | sed -e 's%^Phoenix v\([0-9]\+\)\.\([0-9]\+\)\..*%\1 \2%')
-      info "* Major: $phx_major"
-      info "* Minor: $phx_minor"
-    fi
+  info "Detecting Phoenix version"
+  local lcl_phx_ver=$(mix phx 2> /dev/null | grep -P "^Phoenix v\d+\.\d+\.\d+$")
+  if [ -z "$lcl_phx_ver" ]; then
+    info "WARNING: unable to detect phoenix version"
+  else
+    info "* $lcl_phx_ver"
+    read -r phx_major phx_minor <<< $(echo $lcl_phx_ver | sed -e 's%^Phoenix v\([0-9]\+\)\.\([0-9]\+\)\..*%\1 \2%')
+    info "* Major: $phx_major"
+    info "* Minor: $phx_minor"
   fi
 
   info "Detecting assets directory"
