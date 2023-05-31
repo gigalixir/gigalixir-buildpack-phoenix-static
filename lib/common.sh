@@ -38,14 +38,25 @@ detect_phoenix() {
       if [ -z "$phoenix_ex" ]; then
         if [[ $phx_major -lt 1 ]] || [[ $phx_major -lt 2 && $phx_minor -lt 3 ]]; then
           phoenix_ex=${phoenix_ex:-phoenix}
-          info "* Phoenix 1.2.x or prior detected, using phoenix_ex=${phoenix_ex}"
         else
           phoenix_ex=${phoenix_ex:-phx}
-          info "* Phoenix 1.3.x or later detected, using phoenix_ex=${phoenix_ex}"
+        fi
+      fi
+
+      # detect esbuild
+      if [ -z "$use_esbuild" ]; then
+        if [[ $phx_major -gt 1 ]] || [[ $phx_minor -gt 5 ]]; then
+          use_esbuild=true
+          info "Phoenix 1.6.x or later detected, using esbuild"
+        else
+          use_esbuild=false
+          info "Phoenix 1.5.x or prior detected, using node"
         fi
       fi
     fi
   fi
+
+  use_esbuild=${use_esbuild:-false}
 }
 
 load_config() {
@@ -80,7 +91,7 @@ load_config() {
     assets_path=.
   else
     # Check phoenix custom sub-directory for package.json, phoenix 1.3.x and later
-    info "WARNING: no package.json detected in root nor custom directory, assuming './assets/'"
+    info "WARNING: no package.json detected in root nor custom directory"
     assets_path=assets
   fi
 
@@ -88,6 +99,7 @@ load_config() {
   info "Will use phoenix configuration:"
   info "* assets path ${assets_path}"
   info "* mix tasks namespace ${phoenix_ex}"
+  info "* esbuild: ${use_esbuild}"
 
   info "Will use the following versions:"
   info "* Node ${node_version}"
