@@ -147,11 +147,13 @@ install_and_cache_deps() {
     cp -R $cache_dir/node_modules/* node_modules/
   fi
 
-  info "Installing node modules"
-  if [ -f "$assets_dir/yarn.lock" ]; then
-    install_yarn_deps
-  else
-    install_npm_deps
+  if ! $use_esbuild; then
+    info "Installing node modules"
+    if [ -f "$assets_dir/yarn.lock" ]; then
+      install_yarn_deps
+    else
+      install_npm_deps
+    fi
   fi
 
   if [ -d node_modules ]; then
