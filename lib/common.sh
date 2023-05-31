@@ -43,12 +43,8 @@ load_config() {
   phoenix_dir=$build_dir/$phoenix_relative_path
 
   info "Detecting Phoenix version"
-  pwd
-  info "BUILD DIR: $build_dir"
-  info "CACHE DIR: $cache_dir"
-  info "ENV DIR: $env_dir"
-  info "BP DIR: $build_pack_dir"
-  mix deps tree
+  pushd . > /dev/null
+  cd $build_dir
   local lcl_phx_ver=$(mix phx 2> /dev/null | grep -P "^Phoenix v\d+\.\d+\.\d+$")
   if [ -z "$lcl_phx_ver" ]; then
     info "WARNING: unable to detect phoenix version"
@@ -58,6 +54,7 @@ load_config() {
     info "* Major: $phx_major"
     info "* Minor: $phx_minor"
   fi
+  popd > /dev/null
 
   info "Detecting assets directory"
   if [ -f "$phoenix_dir/$assets_path/package.json" ]; then
