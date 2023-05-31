@@ -42,6 +42,19 @@ load_config() {
 
   phoenix_dir=$build_dir/$phoenix_relative_path
 
+  if [ -z "${phoenix_ex}" ]; then
+    info "Detecting Phoenix version"
+    local lcl_phx_ver=$(mix phx 2> /dev/null | grep -P "^Phoenix v\d+\.\d+\.\d+$")
+    if [ -z "$lcl_phx_ver" ]; then
+      info "WARNING: unable to detect phoenix version"
+    else
+      info "* $lcl_phx_ver"
+      read -r phx_major phx_minor <<< $(echo $lcl_phx_ver | sed -e 's%^Phoenix v\([0-9]\+\)\.\([0-9]\+\)\..*%\1 \2%')
+      info "* Major: $phx_major"
+      info "* Minor: $phx_minor"
+    fi
+  fi
+
   info "Detecting assets directory"
   if [ -f "$phoenix_dir/$assets_path/package.json" ]; then
     # Check phoenix custom sub-directory for package.json
@@ -52,14 +65,14 @@ load_config() {
     info "* assuming phoenix 1.2.x or prior, please check config file"
 
     assets_path=.
-    phoenix_ex=phoenix
+    phoenix_ex=${phoenix_ex:-phoenix}
   else
     # Check phoenix custom sub-directory for package.json, phoenix 1.3.x and later
     info "WARNING: no package.json detected in root nor custom directory"
     info "* assuming phoenix 1.3.x and later, please check config file"
 
     assets_path=assets
-    phoenix_ex=phx
+    phoenix_ex=${phoenix_ex:-phx}
   fi
 
   assets_dir=$phoenix_dir/$assets_path
