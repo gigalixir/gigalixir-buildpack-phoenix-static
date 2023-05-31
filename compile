@@ -1,5 +1,8 @@
 if [ -f "$assets_dir/yarn.lock" ]; then
   yarn deploy
+elif ${use_esbuild:-false}; then
+  mix assets.deploy
+  rm -f _build/esbuild
 else
   npm run deploy
 fi
