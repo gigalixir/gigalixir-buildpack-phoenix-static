@@ -48,6 +48,8 @@ resolve_node_version() {
   case $node_version in
     ""|latest)
       echo "Resolving latest node version..."
+      resolve_node_download
+      echo "* Node $node_version"
       ;;
     *)
       ;;
