@@ -45,13 +45,14 @@ load_config() {
   info "Detecting Phoenix version"
   pushd . > /dev/null
   cd $build_dir
-  mix deps tree
-  local lcl_phx_ver=$(mix deps tree 2> /dev/null | grep -P "^\* phoenix \d+\.\d+\.\d+" | sed -e 's%.\{10\}\([0-9]\+\.[0-9]\+\.[0-9]\+\).*%\1%')
+  DATABASE_URL=ecto://u:p@h/d mix phx
+  DATABASE_URL=ecto://u:p@h/d mix deps tree
+  local lcl_phx_ver=$(mix phx 2> /dev/null | grep -P "^Phoenix v\d+\.\d+\.\d+$")
   if [ -z "$lcl_phx_ver" ]; then
     info "WARNING: unable to detect phoenix version"
   else
-    info "* Phoenix v$lcl_phx_ver"
-    read -r phx_major phx_minor <<< $(echo $lcl_phx_ver | sed -e 's%\([0-9]\+\)\.\([0-9]\+\)\..*%\1 \2%')
+    info "* $lcl_phx_ver"
+    read -r phx_major phx_minor <<< $(echo $lcl_phx_ver | sed -e 's%^Phoenix v\([0-9]\+\)\.\([0-9]\+\)\..*%\1 \2%')
     info "* Major: $phx_major"
     info "* Minor: $phx_minor"
   fi
