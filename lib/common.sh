@@ -47,6 +47,7 @@ load_config() {
   info "BUILD DIR: $build_dir"
   info "CACHE DIR: $cache_dir"
   info "ENV DIR: $env_dir"
+  info "BP DIR: $build_pack_dir"
   mix deps tree
   local lcl_phx_ver=$(mix phx 2> /dev/null | grep -P "^Phoenix v\d+\.\d+\.\d+$")
   if [ -z "$lcl_phx_ver" ]; then
