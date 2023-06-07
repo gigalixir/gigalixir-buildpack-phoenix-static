@@ -130,6 +130,28 @@ export_mix_env() {
   info "* MIX_ENV=${MIX_ENV}"
 }
 
+export_phx_vars() {
+  if [ -z "${PHX_HOST}" ]; then
+    if [ -d $env_dir ] && [ -f $env_dir/PHX_HOST ]; then
+      export PHX_HOST=$(cat $env_dir/PHX_HOST)
+    else
+      export PHX_HOST=${APP_NAME}.gigalixirapp.com
+    fi
+  fi
+
+  info "* PHX_HOST=${PHX_HOST}"
+
+  if [ -z "${PHX_SERVER}" ]; then
+    if [ -d $env_dir ] && [ -f $env_dir/PHX_SERVER ]; then
+      export PHX_SERVER=$(cat $env_dir/PHX_SERVER)
+    else
+      export PHX_SERVER=true
+    fi
+  fi
+
+  info "* PHX_SERVER=${PHX_SERVER}"
+}
+
 fix_node_version() {
   if [ "$node_version" != "latest" ]; then
     node_version=$(echo "${node_version}" | sed 's/[^0-9.]*//g')
