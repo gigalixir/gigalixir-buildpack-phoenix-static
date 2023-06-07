@@ -235,6 +235,7 @@ run_compile() {
     source $custom_compile 2>&1 | indent
   else
     info "Running default compile"
+    echo "DEBUG: ${build_pack_dir}/${compile}"
     source ${build_pack_dir}/${compile} 2>&1 | indent
   fi
 
