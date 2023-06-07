@@ -1,7 +1,7 @@
 if [ -f "$assets_dir/yarn.lock" ]; then
   yarn deploy
 elif ${use_esbuild:-false}; then
-  rm -f package.json #temp
+  cd $phoenix_dir
   mix assets.deploy
   rm -f _build/esbuild
 else
