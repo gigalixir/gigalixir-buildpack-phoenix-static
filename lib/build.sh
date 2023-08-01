@@ -38,29 +38,72 @@ resolve_node() {
       ;;
   esac
 
-  local node_file=$(curl --silent --get --retry 5 --retry-max-time 15 $lookup_url -f | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
-  if [ "$?" -eq "0" ]; then
+  local node_file=""
+  if node_file=$(curl --silent --get --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
+  then
     number=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
     url="${base_url}/v${number}/${node_file//\"/}"
   else
     fail_bin_install node $node_version;
   fi
+
+  # if SHA256SUMS.txt file exists, get the corresponding checksum
+  local sha_url=${lookup_url}SHASUMS256.txt
+  node_sha=$(curl --silent --get --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${number}-linux-x64.tar.gz" | awk '{print $1}')
 }
 
 download_node() {
-  local platform=linux-x64
+  local download_complete=false
+  local code=""
 
-  if [ ! -f ${cached_node} ]; then
-    resolve_node
-
-    echo "Downloading and installing node $number..."
-    local code=$(curl "$url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}")
-    if [ "$code" != "200" ]; then
-      echo "Unable to download node: $code" && false
-    fi
-  else
+  if [ -f ${cached_node} ]; then
     info "Using cached node ${node_version}..."
+    download_complete=true
+  else
+
+    # three attempts to download the file successfully
+    for ii in {2..0}; do
+      if ! $download_complete; then
+        resolve_node
+
+        echo "Downloading node $number..."
+        if code=$(curl "$url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}"); then
+
+          if [ "$code" == "200" ]; then
+
+            # validate download if we have a SHA256 checksum for the version
+            if [ ! -z "$node_sha" ]; then
+              echo "Validating node $number (${node_sha})..."
+              if echo "$node_sha ${cached_node}" | sha256sum -c -; then
+                echo "Download complete"
+                download_complete=true
+                break
+              else
+                echo "Mismatched checksum for node $number"
+              fi
+            else
+              echo "Download complete"
+              download_complete=true
+              break
+            fi
+          fi
+
+        else
+          code=-1
+        fi
+
+        # notify user of retry
+        echo "Failed node download: $code"
+        rm -f ${cached_node}
+        if [ "$ii" -eq "0" ]; then
+          echo "Exhausted download attempts"
+        else
+          echo "Retrying download of node"
+        fi
+      fi
+    done
   fi
+  $download_complete
 }
 
 cleanup_old_node() {
@@ -82,9 +125,23 @@ cleanup_old_node() {
 }
 
 install_node() {
-  info "Installing Node $node_version..."
-  tar xzf ${cached_node} -C /tmp
   local node_dir=$heroku_dir/node
+  local tmp_node_dir="/tmp/node-v$node_version-linux-x64"
+
+  for ii in {2..0}; do
+    echo "Installing Node $node_version..."
+    rm -rf $tmp_node_dir
+    if tar xzf ${cached_node} -C /tmp; then
+      break
+    else
+      if [ "$ii" -eq "0" ]; then
+        echo "Failed to install node"
+        false
+      else
+        echo "Failed installation... retrying"
+      fi
+    fi
+  done
 
   if [ -d $node_dir ]; then
     echo " !     Error while installing Node $node_version."
@@ -93,7 +150,7 @@ install_node() {
   else
     mkdir -p $node_dir
     # Move node (and npm) into .heroku/node and make them executable
-    mv /tmp/node-v$node_version-linux-x64/* $node_dir
+    mv ${tmp_node_dir}/* $node_dir
     chmod +x $node_dir/bin/*
     PATH=$node_dir/bin:$PATH
   fi
