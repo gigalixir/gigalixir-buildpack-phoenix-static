@@ -68,8 +68,10 @@ load_config() {
 
   fix_node_version
 
-  # determine what the phoenix command prefix should be
+  # `mix help` does not like to be piped into grep
   local mix_help=$(cd $build_dir && mix help)
+
+  # determine what the phoenix command prefix should be
   if echo $mix_help | grep -q "mix phx\."; then
     phoenix_ex="phx"
   else

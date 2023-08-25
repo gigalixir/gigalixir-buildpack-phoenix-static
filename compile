@@ -11,7 +11,12 @@ fi
 
 cd $phoenix_dir
 
-mix "${phoenix_ex}.digest"
+# newer version of phoenix recommend a assets.deploy task
+if mix help "assets.deploy" 1>/dev/null 2>&1; then
+  mix assets.deploy
+else
+  mix "${phoenix_ex}.digest"
+fi
 
 if mix help "${phoenix_ex}.digest.clean" 1>/dev/null 2>&1; then
   mix "${phoenix_ex}.digest.clean"
