@@ -1,7 +1,12 @@
 if [ -f "$assets_dir/yarn.lock" ]; then
   yarn deploy
 else
-  npm run deploy
+  # check if a deploy script exists before attempting to run
+  deploy_script=$(node -p -e "let s = require('./package.json').scripts; s && s.deploy || ''")
+
+  if [ -n "$deploy_script" ]; then
+    npm run deploy
+  fi
 fi
 
 cd $phoenix_dir
