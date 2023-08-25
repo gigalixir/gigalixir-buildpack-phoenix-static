@@ -23,23 +23,6 @@ file_contents() {
 }
 
 load_config() {
-  info "Loading config..."
-
-  local custom_config_file="${build_dir}/phoenix_static_buildpack.config"
-
-  # Source for default versions file from buildpack first
-  source "${build_pack_dir}/phoenix_static_buildpack.config"
-
-  if [ -f $custom_config_file ]; then
-    source $custom_config_file
-  else
-    info "The config file phoenix_static_buildpack.config wasn't found"
-    info "Using the default config provided from the Phoenix static buildpack"
-  fi
-
-  fix_node_version
-  fix_npm_version
-
   phoenix_dir=$build_dir/$phoenix_relative_path
 
   info "Detecting assets directory"
@@ -67,8 +50,41 @@ load_config() {
   info "* assets path ${assets_path}"
   info "* mix tasks namespace ${phoenix_ex}"
 
+  info "Loading config..."
+  # set -x
+  local custom_config_file="${build_dir}/phoenix_static_buildpack.config"
+  local asdf_file="${build_dir}/.tool-versions"
+
+  # Source for default versions file from buildpack first
+  source "${build_pack_dir}/phoenix_static_buildpack.config"
+
+  if [ -f $asdf_file ]; then
+    info "asdf file found, loading"
+    load_asdf_config $asdf_file
+  fi
+
+  if [ -f $custom_config_file ]; then
+    source $custom_config_file
+  else
+    info "The config file phoenix_static_buildpack.config wasn't found"
+    info "Using the default config provided from the Phoenix static buildpack or asdf file"
+  fi
+
+  fix_node_version
+
   info "Will use the following versions:"
   info "* Node ${node_version}"
+}
+
+load_npm_config() {
+  local package_file="${assets_dir}/package.json"
+
+  if [ -f $package_file ]; then
+    echo "package.json file found, attempting to extract npm version"
+    extract_npm_version $package_file
+  fi
+
+  fix_npm_version
 }
 
 export_config_vars() {
@@ -102,4 +118,32 @@ fix_node_version() {
 
 fix_npm_version() {
   npm_version=$(echo "${npm_version}" | sed 's/[^0-9.]*//g')
+}
+
+load_asdf_config() {
+  local file=$1
+  local line
+
+  while IFS= read -r line; do
+    if [[ $line == nodejs* ]]; then
+      node_version="${line#nodejs }"
+      echo "asdf node version found: $node_version"
+    fi
+  done < "$file"
+}
+
+extract_npm_version() {
+  local package_file=$1
+
+  set +e
+  # if this does not exist in the JSON, an exception is thrown with a failure code, which is why we allow errors in this block
+  npm_version=$(node -p -e "require('$package_file').engines.npm" 2>/dev/null)
+  set -e
+
+  # check if npm_version is empty
+  if [ ! -z "$npm_version" ]; then
+    echo "npm version found in package.json: $npm_version"
+  else
+    echo "WARNING: no npm version found in package.json"
+  fi
 }
