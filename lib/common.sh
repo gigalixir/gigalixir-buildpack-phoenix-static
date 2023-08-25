@@ -46,12 +46,8 @@ load_config() {
   fi
 
   assets_dir=$phoenix_dir/$assets_path
-  info "Will use phoenix configuration:"
-  info "* assets path ${assets_path}"
-  info "* mix tasks namespace ${phoenix_ex}"
 
   info "Loading config..."
-  # set -x
   local custom_config_file="${build_dir}/phoenix_static_buildpack.config"
   local asdf_file="${build_dir}/.tool-versions"
 
@@ -71,6 +67,18 @@ load_config() {
   fi
 
   fix_node_version
+
+  # determine what the phoenix command prefix should be
+  local mix_help=$(cd $build_dir && mix help)
+  if echo $mix_help | grep -q "mix phx\."; then
+    phoenix_ex="phx"
+  else
+    phoenix_ex="phoenix"
+  fi
+
+  info "Will use phoenix configuration:"
+  info "* assets path ${assets_path}"
+  info "* mix tasks namespace ${phoenix_ex}"
 
   info "Will use the following versions:"
   info "* Node ${node_version}"

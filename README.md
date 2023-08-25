@@ -5,10 +5,11 @@
 This buildpack is meant to be used with the [Heroku Buildpack for Elixir](https://github.com/HashNuke/heroku-buildpack-elixir). When deploying Phoenix apps to Heroku, static assets will need to be compiled. This buildpack sees to it that static assets are compiled and that a corresponding asset manifest is generated.
 
 ## Features
+
 * Easily customizable to your build needs with its `compile` hook!
 * Works much like the [Heroku Buildpack for Elixir](https://github.com/HashNuke/heroku-buildpack-elixir)!
+* Automatic node version detection via asdf and npm version extraction from `engines` key of package.json
 * **Easy configuration** with `phoenix_static_buildpack.config` file
-* Automatically sets `DATABASE_URL`
 * If your app doesn't have a Procfile, default web task `mix phx.server` will be run
 * Can configure versions for Node and NPM
 * Auto-installs Bower deps if `bower.json` is in your app's root path
