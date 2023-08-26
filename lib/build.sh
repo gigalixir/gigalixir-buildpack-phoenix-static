@@ -52,13 +52,20 @@ resolve_node() {
   node_sha=$(curl --silent --get --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${number}-linux-x64.tar.gz" | awk '{print $1}')
 }
 
+# fails if node tar is missing, sha file is missing, or sha doesn't match
+validate_cached_node() {
+  if sha256sum -c $cached_sha; then
+    download_complete=true
+  fi
+}
+
 download_node() {
   local download_complete=false
   local code=""
 
-  if [ -f ${cached_node} ]; then
+  validate_cached_node
+  if $download_complete; then
     info "Using cached node ${node_version}..."
-    download_complete=true
   else
 
     # three attempts to download the file successfully
@@ -74,7 +81,10 @@ download_node() {
             # validate download if we have a SHA256 checksum for the version
             if [ ! -z "$node_sha" ]; then
               echo "Validating node $number (${node_sha})..."
-              if echo "$node_sha ${cached_node}" | sha256sum -c -; then
+              echo "$node_sha ${cached_node}" > $cached_sha
+
+              validate_cached_node
+              if $download_complete; then
                 echo "Download complete"
                 download_complete=true
                 break
