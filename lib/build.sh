@@ -211,7 +211,9 @@ install_and_cache_deps() {
   if [ -d $cache_dir/node_modules ]; then
     info "Loading node modules from cache"
     mkdir node_modules
-    cp -R $cache_dir/node_modules/* node_modules/
+    if [ ! -z $(ls -A $cache_dir/node_modules) ]; then
+      cp -R $cache_dir/node_modules/* node_modules/
+    fi
   fi
 
   info "Installing node modules"
