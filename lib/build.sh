@@ -20,7 +20,9 @@ load_previous_npm_node_versions() {
   fi
 }
 
-resolve_node() {
+# on success, node_version will be in X.Y.Z format, node_url and node_sha will be set
+# on failure, this will exit non-zero
+resolve_node_version() {
   echo "Resolving node version $node_version..."
   
   local base_url="https://nodejs.org/dist"
@@ -41,15 +43,15 @@ resolve_node() {
   local node_file=""
   if node_file=$(curl --silent --get --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
   then
-    number=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-    url="${base_url}/v${number}/${node_file//\"/}"
+    node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+    node_url="${base_url}/v${node_version}/${node_file//\"/}"
   else
     fail_bin_install node $node_version;
   fi
 
-  # if SHA256SUMS.txt file exists, get the corresponding checksum
+  # get the corresponding checksum
   local sha_url=${lookup_url}SHASUMS256.txt
-  node_sha=$(curl --silent --get --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${number}-linux-x64.tar.gz" | awk '{print $1}')
+  node_sha=$(curl --silent --get --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${node_version}-linux-x64.tar.gz" | awk '{print $1}')
 }
 
 # fails if node tar is missing, sha file is missing, or sha doesn't match
@@ -71,16 +73,14 @@ download_node() {
     # three attempts to download the file successfully
     for ii in {2..0}; do
       if ! $download_complete; then
-        resolve_node
-
-        echo "Downloading node $number..."
-        if code=$(curl "$url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}"); then
+        echo "Downloading node $node_version..."
+        if code=$(curl "$node_url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}"); then
 
           if [ "$code" == "200" ]; then
 
             # validate download if we have a SHA256 checksum for the version
             if [ ! -z "$node_sha" ]; then
-              echo "Validating node $number (${node_sha})..."
+              echo "Validating node $node_version (${node_sha})..."
               echo "$node_sha ${cached_node}" > $cached_sha
 
               validate_cached_node
@@ -89,7 +89,7 @@ download_node() {
                 download_complete=true
                 break
               else
-                echo "Mismatched checksum for node $number"
+                echo "Mismatched checksum for node $node_version"
               fi
             else
               echo "Download complete"
