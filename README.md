@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This buildpack is meant to be used with the [Heroku Buildpack for Elixir](https://github.com/HashNuke/heroku-buildpack-elixir). When deploying Phoenix apps to Gigalixir, static assets will need to be compiled. This buildpack sees to it that static assets are compiled and that a corresponding asset manifest is generated.
+This buildpack is meant to be used with the [Heroku Buildpack for Elixir](https://github.com/HashNuke/heroku-buildpack-elixir) on the [Gigalixir Platform](https://gigalixir.com). When deploying Phoenix apps to Gigalixir, static assets will need to be compiled. This buildpack sees to it that static assets are compiled and that a corresponding asset manifest is generated.
 
 ## Features
 * Easily customizable to your build needs with its `compile` hook!
