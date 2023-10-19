@@ -46,7 +46,7 @@ resolve_node_version() {
     node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
     node_url="${base_url}/v${node_version}/${node_file//\"/}"
   else
-    fail_bin_install node $node_version;
+    fail_bin_install node $node_version "Unable to resolve version"
   fi
 
   # get the corresponding checksum
@@ -327,4 +327,13 @@ remove_node() {
   info "Removing node and node_modules"
   rm -rf $assets_dir/node_modules
   rm -rf $heroku_dir/node
+}
+
+fail_bin_install() {
+  local bin="$1"
+  local version="$2"
+  local reason="$3"
+
+  echo "Error installing ${bin} ${version}: ${reason}"
+  exit 1
 }
