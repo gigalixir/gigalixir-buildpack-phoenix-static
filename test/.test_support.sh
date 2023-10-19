@@ -6,12 +6,13 @@ PASSED_ALL_TESTS=false
 
 # make a temp dir for test files/directories
 TEST_DIR=$(mktemp -d -t gigalixir-buildpack-phoenix-static_XXXXXXXXXX)
+ECHO_CONTENT=()
 cleanup() {
   rm -rf ${TEST_DIR}
   if $PASSED_ALL_TESTS; then
-    echo -e "  \e[0;32mTest Suite PASSED\e[0m"
+    /bin/echo -e "  \e[0;32mTest Suite PASSED\e[0m"
   else
-    echo -e "  \e[0;31mFAILED\e[0m"
+    /bin/echo -e "  \e[0;31mFAILED\e[0m"
   fi
   exit
 }
@@ -31,10 +32,11 @@ info() {
 # helper functions
 test() {
   failed=false
-  echo "  TEST: $@"
+  ECHO_CONTENT=()
+  /bin/echo "  TEST: $@"
 }
 
 suite() {
   failed=false
-  echo -e "\e[0;36mSUITE: $@\e[0m"
+  /bin/echo -e "\e[0;36mSUITE: $@\e[0m"
 }
