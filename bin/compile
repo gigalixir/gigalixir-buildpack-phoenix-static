@@ -30,8 +30,6 @@ export_config_vars
 export_mix_env
 
 resolve_node_version
-cached_node=$cache_dir/node-v$node_version-linux-x64.tar.gz
-cached_sha=$cache_dir/SHA256SUM-node-v$node_version
 
 head "Installing binaries"
 cleanup_cache

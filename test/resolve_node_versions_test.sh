@@ -27,6 +27,9 @@ suite "resolve_node_versions"
     [ "20.8.1" == "$node_version" ]
     [ ! -z "$node_url" ]
     [ ! -z "$node_sha" ]
+    [ ! -z "$cached_node" ]
+    [ ! -z "$cached_sha" ]
+    [ -e $cached_sha ]
     ! $failed
 
 
