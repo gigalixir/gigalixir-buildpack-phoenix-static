@@ -49,15 +49,24 @@ resolve_node_version() {
     fail_bin_install node $node_version "Unable to resolve version"
   fi
 
+  # set the cache locations
+  cached_node=$cache_dir/node-v$node_version-linux-x64.tar.gz
+  cached_sha=$cache_dir/SHA256SUM-node-v$node_version
+
   # get the corresponding checksum
   local sha_url=${lookup_url}SHASUMS256.txt
   node_sha=$(curl --silent --get --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${node_version}-linux-x64.tar.gz" | awk '{print $1}')
+  if [ ! -z "$node_sha" ]; then
+    echo $node_sha > $cached_sha
+  fi
 }
 
 # fails if node tar is missing, sha file is missing, or sha doesn't match
 validate_cached_node() {
-  if sha256sum -c $cached_sha; then
-    download_complete=true
+  if [ -e $cached_sha ]; then
+    if sha256sum -c $cached_sha; then
+      download_complete=true
+    fi
   fi
 }
 
@@ -79,9 +88,8 @@ download_node() {
           if [ "$code" == "200" ]; then
 
             # validate download if we have a SHA256 checksum for the version
-            if [ ! -z "$node_sha" ]; then
+            if [ -e "$cached_sha" ]; then
               echo "Validating node $node_version (${node_sha})..."
-              echo "$node_sha ${cached_node}" > $cached_sha
 
               validate_cached_node
               if $download_complete; then
