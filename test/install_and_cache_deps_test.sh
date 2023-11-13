@@ -66,6 +66,17 @@ suite "install_and_cache_deps"
     [ -f $assets_dir/node_modules/some_file_1 ]
     [ -f $assets_dir/node_modules/some_file_1000 ]
 
+    rm -rf $assets_dir/node_modules $cache_dir/node_modules
+
+
+  test "node modules cache contains only dot files"
+
+    mkdir -p $cache_dir/node_modules
+    touch "$cache_dir/node_modules/.some_file"
+
+    install_and_cache_deps
+
+    [ -f $assets_dir/node_modules/.some_file ]
 
 
 PASSED_ALL_TESTS=true
