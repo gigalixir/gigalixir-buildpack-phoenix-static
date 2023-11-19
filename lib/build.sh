@@ -20,7 +20,9 @@ load_previous_npm_node_versions() {
   fi
 }
 
-resolve_node() {
+# on success, node_version will be in X.Y.Z format, node_url and node_sha will be set
+# on failure, this will exit non-zero
+resolve_node_version() {
   echo "Resolving node version $node_version..."
   
   local base_url="https://nodejs.org/dist"
@@ -38,29 +40,88 @@ resolve_node() {
       ;;
   esac
 
-  local node_file=$(curl --silent --get --retry 5 --retry-max-time 15 $lookup_url -f | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
-  if [ "$?" -eq "0" ]; then
-    number=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-    url="${base_url}/v${number}/${node_file//\"/}"
+  local node_file=""
+  if node_file=$(curl --silent --get --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
+  then
+    node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+    node_url="${base_url}/v${node_version}/${node_file//\"/}"
   else
-    fail_bin_install node $node_version;
+    fail_bin_install node $node_version "Unable to resolve version"
+  fi
+
+  # set the cache locations
+  cached_node=$cache_dir/node-v$node_version-linux-x64.tar.gz
+  cached_sha=$cache_dir/SHA256SUM-node-v$node_version
+
+  # get the corresponding checksum
+  local sha_url=${lookup_url}SHASUMS256.txt
+  node_sha=$(curl --silent --get --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${node_version}-linux-x64.tar.gz" | awk '{print $1}')
+  if [ ! -z "$node_sha" ]; then
+    echo "$node_sha ${cached_node}" > $cached_sha
+  fi
+}
+
+# fails if node tar is missing, sha file is missing, or sha doesn't match
+validate_cached_node() {
+  if [ -e $cached_sha ]; then
+    if sha256sum -c $cached_sha; then
+      download_complete=true
+    fi
   fi
 }
 
 download_node() {
-  local platform=linux-x64
+  local download_complete=false
+  local code=""
 
-  if [ ! -f ${cached_node} ]; then
-    resolve_node
-
-    echo "Downloading and installing node $number..."
-    local code=$(curl "$url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}")
-    if [ "$code" != "200" ]; then
-      echo "Unable to download node: $code" && false
-    fi
-  else
+  validate_cached_node
+  if $download_complete; then
     info "Using cached node ${node_version}..."
+  else
+
+    # three attempts to download the file successfully
+    for ii in {2..0}; do
+      if ! $download_complete; then
+        echo "Downloading node $node_version..."
+        if code=$(curl "$node_url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}"); then
+
+          if [ "$code" == "200" ]; then
+
+            # validate download if we have a SHA256 checksum for the version
+            if [ -e "$cached_sha" ]; then
+              echo "Validating node $node_version (${node_sha})..."
+
+              validate_cached_node
+              if $download_complete; then
+                echo "Download complete"
+                download_complete=true
+                break
+              else
+                echo "Mismatched checksum for node $node_version"
+              fi
+            else
+              echo "Download complete"
+              download_complete=true
+              break
+            fi
+          fi
+
+        else
+          code=-1
+        fi
+
+        # notify user of retry
+        echo "Failed node download: $code"
+        rm -f ${cached_node}
+        if [ "$ii" -eq "0" ]; then
+          echo "Exhausted download attempts"
+        else
+          echo "Retrying download of node"
+        fi
+      fi
+    done
   fi
+  $download_complete
 }
 
 cleanup_old_node() {
@@ -82,9 +143,23 @@ cleanup_old_node() {
 }
 
 install_node() {
-  info "Installing Node $node_version..."
-  tar xzf ${cached_node} -C /tmp
   local node_dir=$heroku_dir/node
+  local tmp_node_dir="/tmp/node-v$node_version-linux-x64"
+
+  for ii in {2..0}; do
+    echo "Installing Node $node_version..."
+    rm -rf $tmp_node_dir
+    if tar xzf ${cached_node} -C /tmp; then
+      break
+    else
+      if [ "$ii" -eq "0" ]; then
+        echo "Failed to install node"
+        false
+      else
+        echo "Failed installation... retrying"
+      fi
+    fi
+  done
 
   if [ -d $node_dir ]; then
     echo " !     Error while installing Node $node_version."
@@ -93,7 +168,7 @@ install_node() {
   else
     mkdir -p $node_dir
     # Move node (and npm) into .heroku/node and make them executable
-    mv /tmp/node-v$node_version-linux-x64/* $node_dir
+    mv ${tmp_node_dir}/* $node_dir
     chmod +x $node_dir/bin/*
     PATH=$node_dir/bin:$PATH
   fi
@@ -148,11 +223,14 @@ install_and_cache_deps() {
   if [ -d $cache_dir/node_modules ]; then
     info "Loading node modules from cache"
     mkdir node_modules
-    cp -R $cache_dir/node_modules/* node_modules/
+    if [ -z $(find $cache_dir/node_modules -maxdepth 0 -empty) ]; then
+      rsync -a $cache_dir/node_modules/ node_modules/
+    fi
   fi
 
   info "Installing node modules"
   if [ -f "$assets_dir/yarn.lock" ]; then
+    mkdir -p $assets_dir/node_modules
     install_yarn_deps
   else
     install_npm_deps
@@ -260,6 +338,15 @@ remove_node() {
   info "Removing node and node_modules"
   rm -rf $assets_dir/node_modules
   rm -rf $heroku_dir/node
+}
+
+fail_bin_install() {
+  local bin="$1"
+  local version="$2"
+  local reason="$3"
+
+  echo "Error installing ${bin} ${version}: ${reason}"
+  exit 1
 }
 
 is_yarn2_configured() {
