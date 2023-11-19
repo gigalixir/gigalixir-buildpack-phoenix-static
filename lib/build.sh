@@ -213,7 +213,7 @@ install_yarn() {
   echo "Installed yarn $(yarn --version)"
 
   if is_yarn2_configured; then
-    yarn set version berry
+    yarn set version $yarn_version
   fi
 }
 
