@@ -271,6 +271,8 @@ install_bower_deps() {
 
 compile() {
   cd $phoenix_dir
+
+  # note that these bins are setup by the elixir buildpack
   PATH=$build_dir/.platform_tools/erlang/bin:$PATH
   PATH=$build_dir/.platform_tools/elixir/bin:$PATH
 

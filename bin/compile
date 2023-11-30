@@ -35,6 +35,7 @@ head "Installing binaries"
 cleanup_cache
 download_node
 install_node
+load_npm_config
 install_npm
 if [ -f "$assets_dir/yarn.lock" ]; then
   install_yarn "$heroku_dir/yarn"
