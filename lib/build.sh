@@ -250,7 +250,7 @@ install_and_cache_deps() {
   if [ -f "$assets_dir/yarn.lock" ]; then
     mkdir -p $assets_dir/node_modules
     install_yarn_deps
-  elif [ -f "$assets_dir/yarn.lock" ]; then
+  elif [ -f "$assets_dir/pnpm-lock.yaml" ]; then
     install_pnpm_deps
   else
     install_npm_deps
