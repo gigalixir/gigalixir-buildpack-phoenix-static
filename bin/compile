@@ -40,7 +40,7 @@ if [ -f "$assets_dir/yarn.lock" ]; then
   install_yarn "$heroku_dir/yarn"
 fi
 if [ -f "$assets_dir/pnpm-lock.yaml" ]; then
-  install_pnpm "$heroku_dir/yarn"
+  install_pnpm "$heroku_dir/pnpm"
 fi
 
 head "Building dependencies"
