@@ -228,7 +228,7 @@ install_and_cache_deps() {
   if [ -f "$assets_dir/yarn.lock" ]; then
     mkdir -p $assets_dir/node_modules
     install_yarn_deps
-  else
+  elif [ -f "$assets_dir/package.json" ]; then
     install_npm_deps
   fi
 
