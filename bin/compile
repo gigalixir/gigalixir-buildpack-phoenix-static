@@ -48,3 +48,5 @@ compile
 head "Finalizing build"
 cache_versions
 finalize_node
+
+setup_phx_envvars
