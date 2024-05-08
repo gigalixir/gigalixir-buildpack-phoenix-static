@@ -228,7 +228,7 @@ install_and_cache_deps() {
   if [ -f "$assets_dir/yarn.lock" ]; then
     mkdir -p $assets_dir/node_modules
     install_yarn_deps
-  else
+  elif [ -f "$assets_dir/package.json" ]; then
     install_npm_deps
   fi
 
@@ -343,4 +343,14 @@ fail_bin_install() {
 
   echo "Error installing ${bin} ${version}: ${reason}"
   exit 1
+}
+
+setup_phx_envvars() {
+  info "Setting up Phoenix environment variables"
+  mkdir -p $build_dir/.profile.d
+
+  local phoenix_env_file=$build_dir/.profile.d/phoenix_static_buildpack_env.sh
+
+  echo "export PHX_SERVER=\${PHX_SERVER:-true}" >> $phoenix_env_file
+  echo "export PHX_HOST=\${PHX_HOST:=\${APP_NAME}.gigalixirapp.com}" >> $phoenix_env_file
 }

@@ -1,7 +1,11 @@
 if [ -f "$assets_dir/yarn.lock" ]; then
   yarn deploy
-else
+elif [ -f "$assets_dir/package.json" ]; then
   npm run deploy
+else
+  cd $phoenix_dir
+  mix assets.deploy 
+  rm -f _build/esbuild
 fi
 
 cd $phoenix_dir
