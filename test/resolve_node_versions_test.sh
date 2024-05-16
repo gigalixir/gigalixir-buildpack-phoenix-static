@@ -28,6 +28,7 @@ suite "resolve_node_versions"
     [ ! -z "$node_url" ]
     [ ! -z "$node_sha" ]
     [ ! -z "$cached_node" ]
+    [ ! -z "$node_filename" ]
     [ ! -z "$cached_sha" ]
     [ -e $cached_sha ]
     ! $failed

@@ -50,7 +50,8 @@ resolve_node_version() {
   fi
 
   # set the cache locations
-  cached_node=$cache_dir/node-v$node_version-linux-x64.tar.gz
+  node_filename=node-v$node_version-linux-x64.tar.gz
+  cached_node=$cache_dir/$node_filename
   cached_sha=$cache_dir/SHA256SUM-node-v$node_version
 
   # get the corresponding checksum
