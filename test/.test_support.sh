@@ -21,7 +21,8 @@ trap cleanup EXIT INT TERM
 # create directories for test
 assets_dir=${TEST_DIR}/assets_dir
 cache_dir=${TEST_DIR}/cache_dir
-mkdir -p ${assets_dir} ${cache_dir}
+store_dir=${TEST_DIR}/package_store
+mkdir -p ${assets_dir} ${cache_dir} ${store_dir}
 
 
 # overridden functions

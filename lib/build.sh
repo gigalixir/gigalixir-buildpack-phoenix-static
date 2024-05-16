@@ -64,26 +64,52 @@ resolve_node_version() {
 
 # fails if node tar is missing, sha file is missing, or sha doesn't match
 validate_cached_node() {
+  if sha256sum -c $cached_sha > /dev/null 2> /dev/null; then
+    node_download_complete=true
+  fi
+}
+
+# link in and test the version from the package store
+utilize_package_store_node() {
+  pushd . > /dev/null
+  cd $cache_dir
+  if [ -e ../package_store/node/$node_filename ] && [ ! -z "$node_filename" ]; then
+    rm -f $node_filename
+    ln -s ../package_store/node/$node_filename $node_filename
+  fi
+  popd > /dev/null
+  validate_cached_node
+}
+
+# attempts to use the cached version, if that fails it attempts to use the package store version
+utilize_node_cache() {
   if [ -e $cached_sha ]; then
-    if sha256sum -c $cached_sha; then
-      download_complete=true
+    validate_cached_node
+    if $node_download_complete; then
+      info "Using cached node ${node_version}..."
+    else
+      utilize_package_store_node
+      if $node_download_complete; then
+        info "Using node ${node_version} from package store..."
+      else
+        rm -f $cached_node
+        info "No cached node found"
+      fi
     fi
   fi
 }
 
 download_node() {
-  local download_complete=false
+  node_download_complete=false
   local code=""
 
-  validate_cached_node
-  if $download_complete; then
-    info "Using cached node ${node_version}..."
-  else
-
+  utilize_node_cache
+  if ! $node_download_complete; then
     # three attempts to download the file successfully
     for ii in {2..0}; do
-      if ! $download_complete; then
+      if ! $node_download_complete; then
         echo "Downloading node $node_version..."
+        rm -f ${cached_node}
         if code=$(curl "$node_url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}"); then
 
           if [ "$code" == "200" ]; then
@@ -93,16 +119,16 @@ download_node() {
               echo "Validating node $node_version (${node_sha})..."
 
               validate_cached_node
-              if $download_complete; then
+              if $node_download_complete; then
                 echo "Download complete"
-                download_complete=true
+                node_download_complete=true
                 break
               else
                 echo "Mismatched checksum for node $node_version"
               fi
             else
               echo "Download complete"
-              download_complete=true
+              node_download_complete=true
               break
             fi
           fi
@@ -122,7 +148,7 @@ download_node() {
       fi
     done
   fi
-  $download_complete
+  $node_download_complete
 }
 
 cleanup_old_node() {
