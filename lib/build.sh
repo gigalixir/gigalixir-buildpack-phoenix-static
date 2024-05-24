@@ -214,32 +214,34 @@ install_yarn() {
 }
 
 install_and_cache_deps() {
-  cd $assets_dir
+  if [ -d "$assets_dir" ]; then
+    cd $assets_dir
 
-  if [ -d $cache_dir/node_modules ]; then
-    info "Loading node modules from cache"
-    mkdir node_modules
-    if [ -z $(find $cache_dir/node_modules -maxdepth 0 -empty) ]; then
-      rsync -a $cache_dir/node_modules/ node_modules/
+    if [ -d $cache_dir/node_modules ]; then
+      info "Loading node modules from cache"
+      mkdir node_modules
+      if [ -z $(find $cache_dir/node_modules -maxdepth 0 -empty) ]; then
+        rsync -a $cache_dir/node_modules/ node_modules/
+      fi
     fi
+
+    info "Installing node modules"
+    if [ -f "$assets_dir/yarn.lock" ]; then
+      mkdir -p $assets_dir/node_modules
+      install_yarn_deps
+    elif [ -f "$assets_dir/package.json" ]; then
+      install_npm_deps
+    fi
+
+    if [ -d node_modules ]; then
+      info "Caching node modules"
+      cp -R node_modules $cache_dir
+    fi
+
+    PATH=$assets_dir/node_modules/.bin:$PATH
+
+    install_bower_deps
   fi
-
-  info "Installing node modules"
-  if [ -f "$assets_dir/yarn.lock" ]; then
-    mkdir -p $assets_dir/node_modules
-    install_yarn_deps
-  elif [ -f "$assets_dir/package.json" ]; then
-    install_npm_deps
-  fi
-
-  if [ -d node_modules ]; then
-    info "Caching node modules"
-    cp -R node_modules $cache_dir
-  fi
-
-  PATH=$assets_dir/node_modules/.bin:$PATH
-
-  install_bower_deps
 }
 
 install_npm_deps() {
