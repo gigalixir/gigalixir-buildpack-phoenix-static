@@ -68,6 +68,9 @@ npm_version=2.10.1
 # We can set the version of Yarn to use for the app here
 yarn_version=1.13.0
 
+# We can set the version of PNPM to use for the app here
+pnpm_version=8.15.0
+
 # We can set the path to phoenix app. E.g. apps/phoenix_app when in umbrella.
 phoenix_relative_path=.
 
