@@ -23,7 +23,7 @@ source ${build_pack_dir}/lib/common.sh
 source ${build_pack_dir}/lib/build.sh
 
 
-head "Loading configuration and environment"
+header "Loading configuration and environment"
 load_previous_npm_node_versions
 load_config
 export_config_vars
@@ -31,7 +31,7 @@ export_mix_env
 
 resolve_node_version
 
-head "Installing binaries"
+header "Installing binaries"
 cleanup_cache
 download_node
 install_node
@@ -40,12 +40,12 @@ if [ -f "$assets_dir/yarn.lock" ]; then
   install_yarn "$heroku_dir/yarn"
 fi
 
-head "Building dependencies"
+header "Building dependencies"
 install_and_cache_deps
 
 compile
 
-head "Finalizing build"
+header "Finalizing build"
 cache_versions
 finalize_node
 
