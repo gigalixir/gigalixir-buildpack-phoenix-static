@@ -9,7 +9,7 @@ indent() {
   done
 }
 
-head() {
+header() {
   echo ""
   echo "-----> $*"
 }
@@ -47,19 +47,35 @@ load_config() {
     # Check phoenix custom sub-directory for package.json
     info "* package.json found in custom directory"
   elif [ -f "$phoenix_dir/package.json" ]; then
-    # Check phoenix root directory for package.json, phoenix 1.2.x and prior
-    info "WARNING: package.json detected in root "
-    info "* assuming phoenix 1.2.x or prior, please check config file"
-
+    info "* package.json found in root directory"
     assets_path=.
-    phoenix_ex=phoenix
   else
-    # Check phoenix custom sub-directory for package.json, phoenix 1.3.x and later
     info "WARNING: no package.json detected in root nor custom directory"
-    info "* assuming phoenix 1.3.x and later, please check config file"
+    info "* assuming assets are in /assets"
 
     assets_path=assets
+  fi
+
+  if [ -n "${phoenix_ex}" ]; then
+    info "Using mix namespace for phoenix tasks from config: ${phoenix_ex}"
+  else
+    info "Detecting mix namespace for phoenix tasks"
+
     phoenix_ex=phx
+    if [ -f "${build_dir}/mix.lock" ]; then
+      local phoenix_version=$(elixir lib/phoenix_version.exs "${build_dir}/mix.lock" 2>/dev/null)
+      if [ -n "${phoenix_version}" ]; then
+        if ! echo -e "${phoenix_version}\n1.3.0" | sort -V | head -n 1 | grep -q "^1.3.0$"; then
+          info "Detected Phoenix version ${phoenix_version}, which is prior to 1.3.0"
+          phoenix_ex=phoenix
+        fi
+      else
+        info "WARNING: unable to detect version, assuming 1.3.0 or greater for '${phoenix_version}'"
+      fi
+    else
+      info "WARNING: no mix.lock detected, assuming 1.3.0 or greater"
+    fi
+    info "* Using mix namespace '${phoenix_ex}' for phoenix tasks"
   fi
 
   assets_dir=$phoenix_dir/$assets_path
