@@ -213,6 +213,28 @@ install_yarn() {
   echo "Installed yarn $(yarn --version)"
 }
 
+install_pnpm() {
+  local dir="$1"
+
+  if [ ! $pnpm_version ]; then
+    echo "Error: Please specify the pnpm_version variable."
+    return 1
+  fi
+
+  echo "Downloading and installing pnpm $pnpm_version..."
+  local download_url="https://github.com/pnpm/pnpm/releases/download/v$pnpm_version/pnpm-linux-x64"
+
+  local code=$(curl -w "%{http_code}" -L "$download_url" --silent --fail --retry 5 --retry-max-time 15 -o /tmp/pnpm --write-out "%{http_code}")
+  if [ "$code" != "200" ]; then
+    echo "Unable to download pnpm: $code" && return 1
+  fi
+  mkdir -p "$dir"
+  mv /tmp/pnpm "$dir/pnpm"
+  chmod +x "$dir/pnpm"
+  PATH=$dir:$PATH
+  echo "Installed pnpm $(pnpm --version)"
+}
+
 install_and_cache_deps() {
   if [ -d "$assets_dir" ]; then
     cd $assets_dir
@@ -229,6 +251,8 @@ install_and_cache_deps() {
     if [ -f "$assets_dir/yarn.lock" ]; then
       mkdir -p $assets_dir/node_modules
       install_yarn_deps
+    elif [ -f "$assets_dir/pnpm-lock.yaml" ]; then
+      install_pnpm_deps
     elif [ -f "$assets_dir/package.json" ]; then
       install_npm_deps
     fi
@@ -253,6 +277,10 @@ install_npm_deps() {
 
 install_yarn_deps() {
   yarn install --check-files --cache-folder $cache_dir/yarn-cache --pure-lockfile 2>&1
+}
+
+install_pnpm_deps() {
+  pnpm install --frozen-lockfile --store-dir $cache_dir/pnpm-store 2>&1
 }
 
 install_bower_deps() {
