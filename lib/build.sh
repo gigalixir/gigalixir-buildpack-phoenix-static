@@ -41,7 +41,7 @@ resolve_node_version() {
   esac
 
   local node_file=""
-  if node_file=$(curl --silent --get --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
+  if node_file=$(curl --silent --get -L --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
   then
     node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
     node_url="${base_url}/v${node_version}/${node_file//\"/}"
@@ -55,7 +55,7 @@ resolve_node_version() {
 
   # get the corresponding checksum
   local sha_url=${lookup_url}SHASUMS256.txt
-  node_sha=$(curl --silent --get --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${node_version}-linux-x64.tar.gz" | awk '{print $1}')
+  node_sha=$(curl --silent --get -L --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${node_version}-linux-x64.tar.gz" | awk '{print $1}')
   if [ ! -z "$node_sha" ]; then
     echo "$node_sha ${cached_node}" > $cached_sha
   fi
