@@ -45,6 +45,7 @@ resolve_node_version() {
   then
     node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
     if echo "${node_file}" | grep -q "/"; then
+      node_file=$(echo "${node_file}" | sed -e 's/\/dist//')
       node_url="${base_url}${node_file//\"/}"
     else
       node_url="${base_url}/v${node_version}/${node_file//\"/}"
@@ -87,6 +88,7 @@ download_node() {
     for ii in {2..0}; do
       if ! $download_complete; then
         echo "Downloading node $node_version..."
+        echo "Using ${node_url}"
         if code=$(curl "$node_url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}"); then
 
           if [ "$code" == "200" ]; then
