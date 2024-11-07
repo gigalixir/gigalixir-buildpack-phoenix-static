@@ -41,10 +41,14 @@ resolve_node_version() {
   esac
 
   local node_file=""
-  if node_file=$(curl --silent --get -L --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
+  if node_file=$(curl --silent --get -L --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"[^"]*node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
   then
     node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-    node_url="${base_url}/v${node_version}/${node_file//\"/}"
+    if echo "${node_file}" | grep -q "/"; then
+      node_url="${base_url}${node_file//\"/}"
+    else
+      node_url="${base_url}/v${node_version}/${node_file//\"/}"
+    fi
   else
     fail_bin_install node $node_version "Unable to resolve version"
   fi
