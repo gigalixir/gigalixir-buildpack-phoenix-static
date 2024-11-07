@@ -41,10 +41,15 @@ resolve_node_version() {
   esac
 
   local node_file=""
-  if node_file=$(curl --silent --get --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
+  if node_file=$(curl --silent --get -L --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"[^"]*node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
   then
     node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-    node_url="${base_url}/v${node_version}/${node_file//\"/}"
+    if echo "${node_file}" | grep -q "/"; then
+      node_file=$(echo "${node_file}" | sed -e 's/\/dist//')
+      node_url="${base_url}${node_file//\"/}"
+    else
+      node_url="${base_url}/v${node_version}/${node_file//\"/}"
+    fi
   else
     fail_bin_install node $node_version "Unable to resolve version"
   fi
@@ -55,7 +60,7 @@ resolve_node_version() {
 
   # get the corresponding checksum
   local sha_url=${lookup_url}SHASUMS256.txt
-  node_sha=$(curl --silent --get --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${node_version}-linux-x64.tar.gz" | awk '{print $1}')
+  node_sha=$(curl --silent --get -L --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${node_version}-linux-x64.tar.gz" | awk '{print $1}')
   if [ ! -z "$node_sha" ]; then
     echo "$node_sha ${cached_node}" > $cached_sha
   fi
@@ -83,6 +88,7 @@ download_node() {
     for ii in {2..0}; do
       if ! $download_complete; then
         echo "Downloading node $node_version..."
+        echo "Using ${node_url}"
         if code=$(curl "$node_url" -L --silent --fail --retry 5 --retry-max-time 15 -o ${cached_node} --write-out "%{http_code}"); then
 
           if [ "$code" == "200" ]; then
