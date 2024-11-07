@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # bin/compile <build-dir> <cache-dir> <env-dir>
 
+set -v
+
 build_pack_dir=$(cd $(dirname $(dirname $0)); pwd)
 
 ### Configure environment
