@@ -4,7 +4,9 @@ elif [ -f "$assets_dir/package.json" ] && jq -e '.scripts.deploy' $assets_dir/pa
   npm run deploy
 else
   cd $phoenix_dir
-  mix assets.deploy 
+  if mix help "assets.deploy" 1>/dev/null 2>&1; then
+    mix assets.deploy 
+  fi
   rm -f _build/esbuild
 fi
 
