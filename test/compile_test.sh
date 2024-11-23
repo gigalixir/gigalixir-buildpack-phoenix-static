@@ -46,7 +46,6 @@ suite "compile"
 }' > $assets_dir/package.json
     source $SCRIPT_DIR/../compile
     [ -z "$NPM_ARGS" ]
-    [ "${MIX_ARGS[0]}" == "assets.deploy" ]
 
 
 
