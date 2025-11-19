@@ -31,7 +31,7 @@ load_config() {
   source "${build_pack_dir}/phoenix_static_buildpack.config"
 
   if [ -f $custom_config_file ]; then
-    source $custom_config_file
+    source_file $custom_config_file
   else
     info "The config file phoenix_static_buildpack.config wasn't found"
     info "Using the default config provided from the Phoenix static buildpack"
@@ -118,4 +118,15 @@ fix_node_version() {
 
 fix_npm_version() {
   npm_version=$(echo "${npm_version}" | sed 's/[^0-9.]*//g')
+}
+
+source_file() {
+  local bkup_file=$(mktemp /tmp/buildpack_source_file_bkup.XXXX)
+
+  cp $1 $bkup_file
+
+  # sanitize the file to avoid any non-printable characters
+  LC_ALL=C tr -cd '\11\12\15\40-\176' < $bkup_file > $1
+  source $1
+  mv $bkup_file $1
 }

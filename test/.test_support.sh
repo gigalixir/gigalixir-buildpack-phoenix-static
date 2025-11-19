@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
+set -o pipefail   # don't ignore exit codes when piping output
 
 ROOT_DIR=$(dirname "$SCRIPT_DIR")
 PASSED_ALL_TESTS=false
+build_pack_dir="${ROOT_DIR}"
 
 # make a temp dir for test files/directories
 TEST_DIR=$(mktemp -d -t gigalixir-buildpack-phoenix-static_XXXXXXXXXX)

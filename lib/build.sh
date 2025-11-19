@@ -333,7 +333,7 @@ run_compile() {
 
   if [ -f $custom_compile ]; then
     info "Running custom compile"
-    source $custom_compile 2>&1 | indent
+    source_file $custom_compile 2>&1 | indent
   else
     info "Running default compile"
     source ${build_pack_dir}/${compile} 2>&1 | indent

@@ -16,6 +16,8 @@ fail_bin_install() {
 # TESTS
 ######################
 suite "resolve_node_versions"
+  #disable pipefail for these tests
+  set +o pipefail
 
 
   test "node version specified with 'vX.Y.Z' format"
