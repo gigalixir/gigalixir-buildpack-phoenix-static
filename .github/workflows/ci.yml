@@ -14,4 +14,4 @@ jobs:
 
     - name: run tests
       run: |
-        for tst in test/*; do $tst; done
+        for tst in test/*.sh; do $tst; done
