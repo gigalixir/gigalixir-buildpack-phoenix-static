@@ -1,7 +1,7 @@
 cleanup_cache() {
   if [ $clean_cache = true ]; then
-    info "clean_cache option set to true."
-    info "Cleaning out cache contents"
+    output_line "clean_cache option set to true."
+    output_line "Cleaning out cache contents"
     rm -rf $cache_dir/npm-version
     rm -rf $cache_dir/node-version
     rm -rf $cache_dir/phoenix-static
@@ -81,7 +81,7 @@ download_node() {
 
   validate_cached_node
   if $download_complete; then
-    info "Using cached node ${node_version}..."
+    output_line "Using cached node ${node_version}..."
   else
 
     # three attempts to download the file successfully
@@ -137,7 +137,7 @@ cleanup_old_node() {
   # has the format "5.6.0"
 
   if [ $clean_cache = true ] || [ $old_node != v$node_version ] && [ -f $old_node_dir ]; then
-    info "Cleaning up old Node $old_node"
+    output_line "Cleaning up old Node $old_node"
     rm $old_node_dir
 
     local bower_components_dir=$cache_dir/bower_components
@@ -183,11 +183,11 @@ install_node() {
 install_npm() {
   # Optionally bootstrap a different npm version
   if [ ! $npm_version ] || [[ `npm --version` == "$npm_version" ]]; then
-    info "Using default npm version `npm --version`"
+    output_line "Using default npm version `npm --version`"
   else
-    info "Downloading and installing npm $npm_version (replacing version `npm --version`)..."
+    output_line "Downloading and installing npm $npm_version (replacing version `npm --version`)..."
     cd $build_dir
-    npm install --unsafe-perm --quiet -g npm@$npm_version 2>&1 >/dev/null | indent
+    npm install --unsafe-perm --quiet -g npm@$npm_version 2>&1 >/dev/null | output_indent
   fi
 }
 
@@ -246,14 +246,14 @@ install_and_cache_deps() {
     cd $assets_dir
 
     if [ -d $cache_dir/node_modules ]; then
-      info "Loading node modules from cache"
+      output_line "Loading node modules from cache"
       mkdir node_modules
       if [ -z $(find $cache_dir/node_modules -maxdepth 0 -empty) ]; then
         rsync -a $cache_dir/node_modules/ node_modules/
       fi
     fi
 
-    info "Installing node modules"
+    output_line "Installing node modules"
     if [ -f "$assets_dir/yarn.lock" ]; then
       mkdir -p $assets_dir/node_modules
       install_yarn_deps
@@ -264,7 +264,7 @@ install_and_cache_deps() {
     fi
 
     if [ -d node_modules ]; then
-      info "Caching node modules"
+      output_line "Caching node modules"
       cp -R node_modules $cache_dir
     fi
 
@@ -275,10 +275,10 @@ install_and_cache_deps() {
 }
 
 install_npm_deps() {
-  npm prune | indent
-  npm install --quiet --unsafe-perm --userconfig $build_dir/npmrc 2>&1 | indent
-  npm rebuild 2>&1 | indent
-  npm --unsafe-perm prune 2>&1 | indent
+  npm prune | output_indent
+  npm install --quiet --unsafe-perm --userconfig $build_dir/npmrc 2>&1 | output_indent
+  npm rebuild 2>&1 | output_indent
+  npm --unsafe-perm prune 2>&1 | output_indent
 }
 
 install_yarn_deps() {
@@ -294,7 +294,7 @@ install_bower_deps() {
   local bower_json=bower.json
 
   if [ -f $bower_json ]; then
-    info "Installing and caching bower components"
+    output_line "Installing and caching bower components"
 
     if [ -d $cache_dir/bower_components ]; then
       mkdir -p bower_components
@@ -322,7 +322,7 @@ run_compile() {
 
   if [ $has_clean = 0 ]; then
     mkdir -p $cache_dir/phoenix-static
-    info "Restoring cached assets"
+    output_line "Restoring cached assets"
     mkdir -p priv
     rsync -a -v --ignore-existing $cache_dir/phoenix-static/ priv/static
   fi
@@ -332,23 +332,23 @@ run_compile() {
   fi
 
   if [ -f $custom_compile ]; then
-    info "Running custom compile"
-    source_file $custom_compile 2>&1 | indent
+    output_line "Running custom compile"
+    source_file $custom_compile 2>&1 | output_indent
   else
-    info "Running default compile"
-    source ${build_pack_dir}/${compile} 2>&1 | indent
+    output_line "Running default compile"
+    source ${build_pack_dir}/${compile} 2>&1 | output_indent
   fi
 
   cd $phoenix_dir
 
   if [ $has_clean = 0 ]; then
-    info "Caching assets"
+    output_line "Caching assets"
     rsync -a --delete -v priv/static/ $cache_dir/phoenix-static
   fi
 }
 
 cache_versions() {
-  info "Caching versions for future builds"
+  output_line "Caching versions for future builds"
   echo `node --version` > $cache_dir/node-version
   echo `npm --version` > $cache_dir/npm-version
 }
@@ -362,14 +362,14 @@ finalize_node() {
 }
 
 write_profile() {
-  info "Creating runtime environment"
+  output_line "Creating runtime environment"
   mkdir -p $build_dir/.profile.d
   local export_line="export PATH=\"\$HOME/.heroku/node/bin:\$HOME/.heroku/yarn/bin:\$HOME/bin:\$HOME/$phoenix_relative_path/node_modules/.bin:\$PATH\""
   echo $export_line >> $build_dir/.profile.d/phoenix_static_buildpack_paths.sh
 }
 
 remove_node() {
-  info "Removing node and node_modules"
+  output_line "Removing node and node_modules"
   rm -rf $assets_dir/node_modules
   rm -rf $heroku_dir/node
 }
@@ -384,7 +384,7 @@ fail_bin_install() {
 }
 
 setup_phx_envvars() {
-  info "Setting up Phoenix environment variables"
+  output_line "Setting up Phoenix environment variables"
   mkdir -p $build_dir/.profile.d
 
   local phoenix_env_file=$build_dir/.profile.d/phoenix_static_buildpack_env.sh
