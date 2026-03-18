@@ -13,5 +13,4 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: run tests
-      run: |
-        for tst in test/*.sh; do $tst; done
+      run: make test
