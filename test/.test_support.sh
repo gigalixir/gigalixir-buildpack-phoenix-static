@@ -26,9 +26,18 @@ cache_dir=${TEST_DIR}/cache_dir
 mkdir -p ${assets_dir} ${cache_dir}
 
 
-# overridden functions
-info() {
+# stub output functions to suppress noise in tests
+output_section() {
   true
+}
+output_line() {
+  true
+}
+output_warning() {
+  true
+}
+output_indent() {
+  cat > /dev/null
 }
 
 # helper functions
