@@ -19,11 +19,12 @@ cache_dir=$(cd $2 && pwd)
 env_dir=$(cd $3 && pwd)
 heroku_dir=$build_dir/.heroku
 
+source ${build_pack_dir}/lib/output_funcs.sh
 source ${build_pack_dir}/lib/common.sh
 source ${build_pack_dir}/lib/build.sh
 
 
-header "Loading configuration and environment"
+output_section "Loading configuration and environment"
 load_previous_npm_node_versions
 load_config
 export_config_vars
@@ -31,7 +32,7 @@ export_mix_env
 
 resolve_node_version
 
-header "Installing binaries"
+output_section "Installing binaries"
 cleanup_cache
 download_node
 install_node
@@ -43,12 +44,12 @@ if [ -f "$assets_dir/pnpm-lock.yaml" ]; then
   install_pnpm "$heroku_dir/pnpm"
 fi
 
-header "Building dependencies"
+output_section "Building dependencies"
 install_and_cache_deps
 
 compile
 
-header "Finalizing build"
+output_section "Finalizing build"
 cache_versions
 finalize_node
 

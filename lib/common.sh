@@ -1,19 +1,3 @@
-info() {
-  #echo "`date +\"%M:%S\"`  $*"
-  echo "       $*"
-}
-
-indent() {
-  while read LINE; do
-    echo "       $LINE" || true
-  done
-}
-
-header() {
-  echo ""
-  echo "-----> $*"
-}
-
 file_contents() {
   if test -f $1; then
     echo "$(cat $1)"
@@ -23,7 +7,7 @@ file_contents() {
 }
 
 load_config() {
-  info "Loading config..."
+  output_line "Loading config..."
 
   local custom_config_file="${build_dir}/phoenix_static_buildpack.config"
 
@@ -33,8 +17,8 @@ load_config() {
   if [ -f $custom_config_file ]; then
     source_file $custom_config_file
   else
-    info "The config file phoenix_static_buildpack.config wasn't found"
-    info "Using the default config provided from the Phoenix static buildpack"
+    output_line "The config file phoenix_static_buildpack.config wasn't found"
+    output_line "Using the default config provided from the Phoenix static buildpack"
   fi
 
   fix_node_version
@@ -42,56 +26,56 @@ load_config() {
 
   phoenix_dir=$build_dir/$phoenix_relative_path
 
-  info "Detecting assets directory"
+  output_line "Detecting assets directory"
   if [ -f "$phoenix_dir/$assets_path/package.json" ]; then
     # Check phoenix custom sub-directory for package.json
-    info "* package.json found in custom directory"
+    output_line "* package.json found in custom directory"
   elif [ -f "$phoenix_dir/package.json" ]; then
-    info "* package.json found in root directory"
+    output_line "* package.json found in root directory"
     assets_path=.
   else
-    info "WARNING: no package.json detected in root nor custom directory"
-    info "* assuming assets are in /assets"
+    output_line "WARNING: no package.json detected in root nor custom directory"
+    output_line "* assuming assets are in /assets"
 
     assets_path=assets
   fi
 
   if [ -n "${phoenix_ex}" ]; then
-    info "Using mix namespace for phoenix tasks from config: ${phoenix_ex}"
+    output_line "Using mix namespace for phoenix tasks from config: ${phoenix_ex}"
   else
-    info "Detecting mix namespace for phoenix tasks"
+    output_line "Detecting mix namespace for phoenix tasks"
 
     phoenix_ex=phx
     if [ -f "${build_dir}/mix.lock" ]; then
       local phoenix_version=$(elixir lib/phoenix_version.exs "${build_dir}/mix.lock" 2>/dev/null)
       if [ -n "${phoenix_version}" ]; then
         if ! echo -e "${phoenix_version}\n1.3.0" | sort -V | head -n 1 | grep -q "^1.3.0$"; then
-          info "Detected Phoenix version ${phoenix_version}, which is prior to 1.3.0"
+          output_line "Detected Phoenix version ${phoenix_version}, which is prior to 1.3.0"
           phoenix_ex=phoenix
         fi
       else
-        info "WARNING: unable to detect version, assuming 1.3.0 or greater for '${phoenix_version}'"
+        output_line "WARNING: unable to detect version, assuming 1.3.0 or greater for '${phoenix_version}'"
       fi
     else
-      info "WARNING: no mix.lock detected, assuming 1.3.0 or greater"
+      output_line "WARNING: no mix.lock detected, assuming 1.3.0 or greater"
     fi
-    info "* Using mix namespace '${phoenix_ex}' for phoenix tasks"
+    output_line "* Using mix namespace '${phoenix_ex}' for phoenix tasks"
   fi
 
   assets_dir=$phoenix_dir/$assets_path
-  info "Will use phoenix configuration:"
-  info "* assets path ${assets_path}"
-  info "* mix tasks namespace ${phoenix_ex}"
+  output_line "Will use phoenix configuration:"
+  output_line "* assets path ${assets_path}"
+  output_line "* mix tasks namespace ${phoenix_ex}"
 
-  info "Will use the following versions:"
-  info "* Node ${node_version}"
+  output_line "Will use the following versions:"
+  output_line "* Node ${node_version}"
 }
 
 export_config_vars() {
   whitelist_regex=${2:-''}
   blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH)$'}
   if [ -d "$env_dir" ]; then
-    info "Will export the following config vars:"
+    output_line "Will export the following config vars:"
     for e in $(ls $env_dir); do
       echo "$e" | grep -E "$whitelist_regex" | grep -vE "$blacklist_regex" &&
       export "$e=$(cat $env_dir/$e)"
@@ -109,7 +93,7 @@ export_mix_env() {
     fi
   fi
 
-  info "* MIX_ENV=${MIX_ENV}"
+  output_line "* MIX_ENV=${MIX_ENV}"
 }
 
 fix_node_version() {
