@@ -25,6 +25,7 @@ suite "detect"
     EXIT_CODE=""
     ECHO_CONTENT=()
     touch $TEST_DIR/mix.exs
+    unset PHOENIX_STATIC_BUILDPACK__DISABLED
 
     source $SCRIPT_DIR/../bin/detect "$TEST_DIR"
 
@@ -44,6 +45,57 @@ suite "detect"
 
     [ "1" -eq "$EXIT_CODE" ]
     [ "${#ECHO_CONTENT[@]}" -eq 0 ]
+
+
+
+  test "mix.exs exists but disabled with 1 exits 1"
+
+    EXIT_CODE=""
+    ECHO_CONTENT=()
+    touch $TEST_DIR/mix.exs
+    PHOENIX_STATIC_BUILDPACK__DISABLED=1
+
+    source $SCRIPT_DIR/../bin/detect "$TEST_DIR"
+
+    [ "1" -eq "$EXIT_CODE" ]
+    [ "Phoenix detected, but disabled by PHOENIX_STATIC_BUILDPACK__DISABLED" == "${ECHO_CONTENT[0]}" ]
+
+    rm $TEST_DIR/mix.exs
+    unset PHOENIX_STATIC_BUILDPACK__DISABLED
+
+
+
+  test "mix.exs exists but disabled with true exits 1"
+
+    EXIT_CODE=""
+    ECHO_CONTENT=()
+    touch $TEST_DIR/mix.exs
+    PHOENIX_STATIC_BUILDPACK__DISABLED=true
+
+    source $SCRIPT_DIR/../bin/detect "$TEST_DIR"
+
+    [ "1" -eq "$EXIT_CODE" ]
+    [ "Phoenix detected, but disabled by PHOENIX_STATIC_BUILDPACK__DISABLED" == "${ECHO_CONTENT[0]}" ]
+
+    rm $TEST_DIR/mix.exs
+    unset PHOENIX_STATIC_BUILDPACK__DISABLED
+
+
+
+  test "mix.exs exists and disabled set to other value outputs Phoenix and exits 0"
+
+    EXIT_CODE=""
+    ECHO_CONTENT=()
+    touch $TEST_DIR/mix.exs
+    PHOENIX_STATIC_BUILDPACK__DISABLED=false
+
+    source $SCRIPT_DIR/../bin/detect "$TEST_DIR"
+
+    [ "0" -eq "$EXIT_CODE" ]
+    [ "Phoenix" == "${ECHO_CONTENT[0]}" ]
+
+    rm $TEST_DIR/mix.exs
+    unset PHOENIX_STATIC_BUILDPACK__DISABLED
 
 
 
