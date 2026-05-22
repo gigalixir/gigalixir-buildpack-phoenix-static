@@ -13,6 +13,7 @@ This buildpack is meant to be used with the [Heroku Buildpack for Elixir](https:
 * Can configure versions for Node and NPM
 * Auto-installs Bower deps if `bower.json` is in your app's root path
 * Caches Node, NPM modules and Bower components
+* Can be disabled without removing the buildpack via the `PHOENIX_STATIC_BUILDPACK__DISABLED` environment variable
 
 ## Usage
 
@@ -42,6 +43,19 @@ bundle install
 
 Finally, add the ruby buildpack to your `.buildpacks` file.
 Ask [Gigalixir Support](mailto:help@gigalixir.com) for any assistance.
+
+## Disabling the buildpack
+
+You can disable this buildpack without removing it from your `.buildpacks` file by
+setting the `PHOENIX_STATIC_BUILDPACK__DISABLED` environment variable to `1` or `true`.
+When set, detection will report that Phoenix was found but is disabled and the buildpack
+will be skipped:
+
+```bash
+gigalixir config:set PHOENIX_STATIC_BUILDPACK__DISABLED=true
+```
+
+To re-enable it, unset the variable or set it to any other value.
 
 ## Configuration
 

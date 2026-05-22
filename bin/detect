@@ -4,8 +4,14 @@ mix_file_url="$1/mix.exs"
 
 if [ -f $mix_file_url ];
 then
-  echo "Phoenix"
-  exit 0
+  if [ "$PHOENIX_STATIC_BUILDPACK__DISABLED" == "1" ] || [ "$PHOENIX_STATIC_BUILDPACK__DISABLED" == "true" ];
+  then
+    echo "Phoenix detected, but disabled by PHOENIX_STATIC_BUILDPACK__DISABLED"
+    exit 1
+  else
+    echo "Phoenix"
+    exit 0
+  fi
 else
   exit 1
 fi
