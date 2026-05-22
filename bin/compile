@@ -22,6 +22,14 @@ heroku_dir=$build_dir/.heroku
 source ${build_pack_dir}/lib/output_funcs.sh
 source ${build_pack_dir}/lib/common.sh
 source ${build_pack_dir}/lib/build.sh
+source ${build_pack_dir}/lib/disabled.sh
+
+
+# Skip the buildpack entirely if disabled, before doing any work.
+if buildpack_disabled_in_env_dir "$env_dir"; then
+  output_section "Phoenix static buildpack disabled by PHOENIX_STATIC_BUILDPACK__DISABLED, skipping"
+  exit 0
+fi
 
 
 output_section "Loading configuration and environment"

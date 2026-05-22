@@ -48,8 +48,9 @@ Ask [Gigalixir Support](mailto:help@gigalixir.com) for any assistance.
 
 You can disable this buildpack without removing it from your `.buildpacks` file by
 setting the `PHOENIX_STATIC_BUILDPACK__DISABLED` environment variable to `1` or `true`.
-When set, detection will report that Phoenix was found but is disabled and the buildpack
-will be skipped:
+When set, detection reports that Phoenix was found but is disabled (and exits non-zero),
+and the compile step short-circuits early with a message and succeeds without doing any
+work — so the buildpack is skipped regardless of whether detection runs:
 
 ```bash
 gigalixir config:set PHOENIX_STATIC_BUILDPACK__DISABLED=true

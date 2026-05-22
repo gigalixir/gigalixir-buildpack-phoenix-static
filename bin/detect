@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 
+bin_dir=$(cd $(dirname $0); pwd)
+source "${bin_dir}/../lib/disabled.sh"
+
 mix_file_url="$1/mix.exs"
 
 if [ -f $mix_file_url ];
 then
-  if [ "$PHOENIX_STATIC_BUILDPACK__DISABLED" == "1" ] || [ "$PHOENIX_STATIC_BUILDPACK__DISABLED" == "true" ];
+  if buildpack_disabled_value "$PHOENIX_STATIC_BUILDPACK__DISABLED";
   then
     echo "Phoenix detected, but disabled by PHOENIX_STATIC_BUILDPACK__DISABLED"
     exit 1
