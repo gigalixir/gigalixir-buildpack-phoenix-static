@@ -1,0 +1,107 @@
+name: Release
+
+# Cut a GitHub Release on every merge to main, versioned from conventional
+# commits since the last tag (feat: -> minor, fix: -> patch,
+# BREAKING CHANGE / ! -> major). Merges whose commits don't match any of those
+# (docs/chore/refactor/test/ci) produce no tag and no release.
+#
+# First-party only: git + the GitHub CLI (gh, preinstalled on the runner) +
+# actions/checkout (GitHub's own org). No third-party actions. The one piece
+# with no official tool -- picking the semver bump from commit messages -- is
+# the small shell block below.
+#
+# Relies on at least one existing semver tag (e.g. v1.0.0) as a baseline; with
+# no tags present it seeds the first release at v1.0.0.
+on:
+  push:
+    branches:
+      - main
+
+# Never run two releases concurrently; let an in-flight one finish.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # push tags and create releases
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history + tags so we can find the previous tag
+          fetch-tags: true
+
+      - name: Compute next version from conventional commits
+        id: version
+        run: |
+          set -euo pipefail
+
+          last_tag=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+
+          # No tags yet: seed the first release.
+          if [ -z "$last_tag" ]; then
+            echo "No existing tags; seeding initial release v1.0.0"
+            {
+              echo "release=true"
+              echo "tag=v1.0.0"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          range="${last_tag}..HEAD"
+          subjects=$(git log --format='%s' "$range")
+          bodies=$(git log --format='%B' "$range")
+
+          # Highest-precedence bump wins: major > minor > patch.
+          if printf '%s\n' "$bodies"   | grep -qE 'BREAKING CHANGE' \
+          || printf '%s\n' "$subjects" | grep -qE '^[a-z]+(\(.+\))?!:'; then
+            bump=major
+          elif printf '%s\n' "$subjects" | grep -qE '^feat(\(.+\))?:'; then
+            bump=minor
+          elif printf '%s\n' "$subjects" | grep -qE '^fix(\(.+\))?:'; then
+            bump=patch
+          else
+            echo "No releasable commits since ${last_tag}; skipping."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          IFS=. read -r major minor patch <<< "${last_tag#v}"
+          case "$bump" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+
+          next="v${major}.${minor}.${patch}"
+          echo "Next version: ${next} (${bump}, from ${last_tag})"
+          {
+            echo "release=true"
+            echo "tag=${next}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create tag and release
+        if: steps.version.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          # Idempotency guard: bail if a re-run would clash with an existing tag.
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists on origin; nothing to do."
+            exit 0
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "$TAG"
+          git push origin "$TAG"
+
+          # --generate-notes uses GitHub's built-in (first-party) notes generator.
+          gh release create "$TAG" --title "$TAG" --generate-notes --target "$GITHUB_SHA"
