@@ -228,15 +228,30 @@ install_pnpm() {
   fi
 
   echo "Downloading and installing pnpm $pnpm_version..."
-  local download_url="https://github.com/pnpm/pnpm/releases/download/v$pnpm_version/pnpm-linux-x64"
 
-  local code=$(curl -w "%{http_code}" -L "$download_url" --silent --fail --retry 5 --retry-max-time 15 -o /tmp/pnpm --write-out "%{http_code}")
+  # pnpm changed its release packaging at v11.0.0:
+  #   <= 10 ships a single self-contained binary asset (pnpm-linux-x64)
+  #   >= 11 ships a gzipped tarball (pnpm-linux-x64.tar.gz) with the `pnpm`
+  #         binary plus a `dist/` dir at the root, which must be kept together.
+  local major="${pnpm_version%%.*}"
+  local asset="pnpm-linux-x64"
+  [ "$major" -ge 11 ] && asset="pnpm-linux-x64.tar.gz"
+
+  local download_url="https://github.com/pnpm/pnpm/releases/download/v$pnpm_version/$asset"
+  local code=$(curl -w "%{http_code}" -L "$download_url" --silent --fail --retry 5 --retry-max-time 15 -o "/tmp/$asset" --write-out "%{http_code}")
   if [ "$code" != "200" ]; then
     echo "Unable to download pnpm: $code" && return 1
   fi
+
+  rm -rf "$dir"
   mkdir -p "$dir"
-  mv /tmp/pnpm "$dir/pnpm"
+  if [ "$major" -ge 11 ]; then
+    tar xzf "/tmp/$asset" -C "$dir"
+  else
+    mv "/tmp/$asset" "$dir/pnpm"
+  fi
   chmod +x "$dir/pnpm"
+
   PATH=$dir:$PATH
   echo "Installed pnpm $(pnpm --version)"
 }
