@@ -10,7 +10,7 @@ This buildpack is meant to be used with the [Heroku Buildpack for Elixir](https:
 * **Easy configuration** with `phoenix_static_buildpack.config` file
 * Automatically sets `DATABASE_URL`
 * If your app doesn't have a Procfile, default web task `mix phx.server` will be run
-* Can configure versions for Node and NPM
+* Can configure versions for Node and NPM, including the `nodejs` entry in an asdf `.tool-versions` file
 * Auto-installs Bower deps if `bower.json` is in your app's root path
 * Caches Node, NPM modules and Bower components
 * Can be disabled without removing the buildpack via the `PHOENIX_STATIC_BUILDPACK__DISABLED` environment variable
@@ -63,6 +63,20 @@ To re-enable it, unset the variable or set it to any other value.
 Create a `phoenix_static_buildpack.config` file in your app's root dir if you want to override the defaults. The file's syntax is bash.
 
 If you don't specify a config option, then the default option from the buildpack's [`phoenix_static_buildpack.config`](https://github.com/gigalixir/gigalixir-buildpack-phoenix-static/blob/main/phoenix_static_buildpack.config) file will be used.
+
+### Node version from `.tool-versions`
+
+If your app has an asdf [`.tool-versions`](https://asdf-vm.com/manage/configuration.html) file in its root dir, the `nodejs` entry is used as the Node version:
+
+```
+erlang 27.2.2
+elixir 1.17.3-otp-27
+nodejs 22.19.0
+```
+
+This is the same file the [Elixir buildpack](https://github.com/gigalixir/gigalixir-buildpack-elixir) reads its `erlang` and `elixir` versions from, so a single file can pin every version your app builds with.
+
+An explicit `node_version` in `phoenix_static_buildpack.config` still takes precedence, and asdf aliases (`lts/jod`, `system`, ...) are ignored with a warning since only an explicit version can be resolved.
 
 
 __Here's a full config file with all available options:__
