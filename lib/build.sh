@@ -20,13 +20,50 @@ load_previous_npm_node_versions() {
   fi
 }
 
+# fetches $1 on stdout, retrying up to node_lookup_attempts times
+#
+# curl's own --retry only covers transport errors and a handful of 5xx codes, so
+# on its own it will happily hand back a 404 body or the empty response a stale
+# CDN edge can serve. --fail turns bad statuses into a non-zero exit, and an
+# empty body counts as a failed attempt, so both get retried here instead of
+# silently flowing downstream as if they were real content.
+fetch_url() {
+  local url="$1"
+  local attempts=${node_lookup_attempts:-3}
+  local delay=${node_lookup_delay:-1}
+  local attempt=1
+  local body=""
+
+  while [ $attempt -le $attempts ]; do
+    if body=$(curl "$url" --silent --show-error --fail --get -L --retry 5 --retry-max-time 15) && [ -n "$body" ]; then
+      echo "$body"
+      return 0
+    fi
+
+    # to stderr: this function's stdout is the response body the caller captures,
+    # so anything logged there would be swallowed or spliced into the content
+    output_line "Failed to fetch ${url} (attempt ${attempt} of ${attempts})" >&2
+
+    if [ $attempt -lt $attempts ]; then
+      sleep $delay
+    fi
+
+    attempt=$((attempt + 1))
+  done
+
+  return 1
+}
+
 # on success, node_version will be in X.Y.Z format, node_url and node_sha will be set
 # on failure, this will exit non-zero
 resolve_node_version() {
   echo "Resolving node version $node_version..."
-  
+
   local base_url="https://nodejs.org/dist"
   local lookup_url=""
+
+  node_url=""
+  node_sha=""
 
   case $node_version in
     ""|latest)
@@ -40,18 +77,22 @@ resolve_node_version() {
       ;;
   esac
 
+  local listing=""
   local node_file=""
-  if node_file=$(curl --silent --get -L --retry 5 --retry-max-time 15 $lookup_url | grep -oE  '"[^"]*node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"')
-  then
-    node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-    if echo "${node_file}" | grep -q "/"; then
-      node_file=$(echo "${node_file}" | sed -e 's/\/dist//')
-      node_url="${base_url}${node_file//\"/}"
-    else
-      node_url="${base_url}/v${node_version}/${node_file//\"/}"
-    fi
+  if listing=$(fetch_url "${lookup_url}"); then
+    node_file=$(echo "$listing" | grep -oE '"[^"]*node-v[0-9]+.[0-9]+.[0-9]+-linux-x64.tar.gz"' | head -n 1) || true
+  fi
+
+  if [ -z "$node_file" ]; then
+    fail_bin_install node "$node_version" "Unable to resolve version from ${lookup_url}"
+  fi
+
+  node_version=$(echo "$node_file" | sed -E 's/.*node-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+  if echo "${node_file}" | grep -q "/"; then
+    node_file=$(echo "${node_file}" | sed -e 's/\/dist//')
+    node_url="${base_url}${node_file//\"/}"
   else
-    fail_bin_install node $node_version "Unable to resolve version"
+    node_url="${base_url}/v${node_version}/${node_file//\"/}"
   fi
 
   # set the cache locations
@@ -59,9 +100,20 @@ resolve_node_version() {
   cached_sha=$cache_dir/SHA256SUM-node-v$node_version
 
   # get the corresponding checksum
-  local sha_url=${lookup_url}SHASUMS256.txt
-  node_sha=$(curl --silent --get -L --retry 5 --retry-max-time 15 $sha_url | grep -E "node-v${node_version}-linux-x64.tar.gz" | awk '{print $1}')
-  if [ ! -z "$node_sha" ]; then
+  #
+  # An unverifiable download is not worth installing, so no checksum is a hard
+  # failure. It has to be a loud one: under `set -o errexit -o pipefail` the
+  # unguarded lookup this replaces took the whole build down with no output at
+  # all whenever nodejs.org served a 404 or a stale response.
+  local sha_url="${lookup_url}SHASUMS256.txt"
+  local shasums=""
+  if shasums=$(fetch_url "${sha_url}"); then
+    node_sha=$(echo "$shasums" | grep -E "node-v${node_version}-linux-x64.tar.gz" | awk '{print $1}' | head -n 1) || true
+  fi
+
+  if [ -z "$node_sha" ]; then
+    fail_bin_install node "$node_version" "Unable to fetch a checksum from ${sha_url}"
+  else
     echo "$node_sha ${cached_node}" > $cached_sha
   fi
 }
