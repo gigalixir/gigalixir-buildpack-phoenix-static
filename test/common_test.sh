@@ -218,6 +218,96 @@ suite "load_config"
 
 
 
+  test "reads node version from .tool-versions"
+
+    build_dir=$TEST_DIR/build_asdf
+    mkdir -p $build_dir
+    echo "erlang 27.2.2
+elixir 1.17.3-otp-27
+nodejs 22.19.0" > $build_dir/.tool-versions
+
+    load_config > /dev/null
+
+    [ "22.19.0" == "$node_version" ]
+
+    rm -rf $build_dir
+
+
+
+  test "custom config overrides .tool-versions"
+
+    build_dir=$TEST_DIR/build_asdf_and_cfg
+    mkdir -p $build_dir
+    echo "nodejs 22.19.0" > $build_dir/.tool-versions
+    echo 'node_version=20.0.0' > $build_dir/phoenix_static_buildpack.config
+
+    load_config > /dev/null
+
+    [ "20.0.0" == "$node_version" ]
+
+    rm -rf $build_dir
+
+
+
+  test "keeps the default when .tool-versions has no nodejs entry"
+
+    build_dir=$TEST_DIR/build_asdf_unrelated
+    mkdir -p $build_dir
+    echo "erlang 27.2.2
+elixir 1.17.3-otp-27" > $build_dir/.tool-versions
+
+    load_config > /dev/null
+
+    # the buildpack default is node_version=latest, which fix_node_version empties
+    [ -z "$node_version" ]
+
+    rm -rf $build_dir
+
+
+
+  test "uses the last nodejs entry in .tool-versions"
+
+    build_dir=$TEST_DIR/build_asdf_repeated
+    mkdir -p $build_dir
+    echo "nodejs 20.0.0
+nodejs 22.19.0" > $build_dir/.tool-versions
+
+    load_config > /dev/null
+
+    [ "22.19.0" == "$node_version" ]
+
+    rm -rf $build_dir
+
+
+
+  test "ignores an asdf alias in .tool-versions"
+
+    build_dir=$TEST_DIR/build_asdf_alias
+    mkdir -p $build_dir
+    echo "nodejs lts/jod" > $build_dir/.tool-versions
+
+    load_config > /dev/null
+
+    [ -z "$node_version" ]
+
+    rm -rf $build_dir
+
+
+
+  test "tolerates .tool-versions without a trailing newline"
+
+    build_dir=$TEST_DIR/build_asdf_no_newline
+    mkdir -p $build_dir
+    printf "erlang 27.2.2\nnodejs 22.19.0" > $build_dir/.tool-versions
+
+    load_config > /dev/null
+
+    [ "22.19.0" == "$node_version" ]
+
+    rm -rf $build_dir
+
+
+
   test "detects assets path when package.json in root"
 
     build_dir=$TEST_DIR/build_assets_root

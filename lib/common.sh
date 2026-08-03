@@ -6,6 +6,19 @@ file_contents() {
   fi
 }
 
+# reads a package's version out of an asdf .tool-versions file, empty if unset
+#
+# Mirrors extract_asdf_version in gigalixir-buildpack-elixir, which reads the
+# erlang and elixir entries from this same file.
+extract_asdf_version() {
+  local file="${build_dir}/.tool-versions"
+  local package=$1
+
+  if [ -f $file ]; then
+    grep "^$package" $file | tail -n 1 | awk '{print $2}' || true
+  fi
+}
+
 load_config() {
   output_line "Loading config..."
 
@@ -13,6 +26,20 @@ load_config() {
 
   # Source for default versions file from buildpack first
   source "${build_pack_dir}/phoenix_static_buildpack.config"
+
+  # .tool-versions sits between the buildpack defaults and the app's own config
+  # file, so it beats the default but an explicit node_version still wins.
+  local asdf_node_version=$(extract_asdf_version "nodejs")
+  if [ -n "${asdf_node_version}" ]; then
+    # asdf also accepts aliases such as `lts/jod` and `system`, which mean nothing
+    # here and which fix_node_version would quietly reduce to the newest release
+    if echo "${asdf_node_version}" | grep -qE '[0-9]'; then
+      output_line "Detected nodejs ${asdf_node_version} in .tool-versions"
+      node_version=${asdf_node_version}
+    else
+      output_line "WARNING: ignoring unsupported nodejs version '${asdf_node_version}' from .tool-versions"
+    fi
+  fi
 
   if [ -f $custom_config_file ]; then
     source_file $custom_config_file
